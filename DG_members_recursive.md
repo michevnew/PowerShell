@@ -29,8 +29,7 @@ By default the script outputs the results to a CSV file and also stores them in 
 
 The screenshot below illustrates the different types of output you can get depending on the parameters used. The top example list just direct members of the DG group, the middle one includes any members of the nested “empty” group as well, since the -RecursiveOutput switch was used. The bottom example was run with both the -RecursiveOutput and -RecursiveOutputListGroups switches, and thus includes the membership of any nested groups, as well as an entry that lists the address (or identifier) for the actual nested group.
 
-
-
+![image](https://user-images.githubusercontent.com/38553333/75884298-38efcb80-5e2d-11ea-8ead-61e8894962be.png)
   
 Additional information about the script can be found in the built-in help or in [this article](https://practical365.com/blog/how-to-inventory-membership-of-exchange-groups-recursively/).
   
