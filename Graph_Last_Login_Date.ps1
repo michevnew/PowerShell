@@ -1,8 +1,8 @@
 #Set up
-$AppId = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+$AppId = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" #clientID of your AAD app, must have User.Read.All, Directory.Read.All, Auditlogs.Read.All permissions
 $client_secret = Get-Content .\ReportingAPIsecret.txt | ConvertTo-SecureString
 $app_cred = New-Object System.Management.Automation.PsCredential($AppId, $client_secret)
-$TenantId = "tenant.onmicrosoft.com"
+$TenantId = "tenant.onmicrosoft.com" #your tenant
 
 $body = @{
     client_id     = $AppId
