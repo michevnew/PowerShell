@@ -1,5 +1,11 @@
 # Office 365 Calendar Permissions Inventory
 
+UPDATED APR 2020: Microsoft changed the output of the Get-MailboxFolderPermission in the service, it no longer returns the RecucedRecipient object but instead a PermissionSecurityPrincipal object. I've adjusted the script accodrdingly, but this mean it will no longer run as expected against on-opremises installs. You can change it manually: 
+
+$entry.User.RecipientPrincipal.PrimarySmtpAddress.ToString() <-> $entry.User.ADRecipient.PrimarySmtpAddress.ToString()
+
+///end update
+
 The script lists find the default Calendar folder for all mailboxes of the specified type(s) and lists its permissions. Running the script without any parameter will return permissions for User mailboxes only. Use the switches to include Shared, Room or Equipment mailboxes.
 
 As the full list of mailboxes needs to be cycled in order to get the permissions, the script will use Invoke-Command in order to get a minimum set of attributes returned. If additional attributes are required, they need to be added to the relevant script block first.
