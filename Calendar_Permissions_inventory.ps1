@@ -99,7 +99,7 @@ function Get-CalendarPermissionInventory {
                     $internal = ("$($entry.User.RecipientPrincipal.PrimarySmtpAddress.ToString()):$($entry.AccessRights)" + ";" + $internal)
                 }
                 elseif ($entry.User.UserType.ToString() -eq "External") {
-                    $external = ("$($entry.User.DisplayName.Replace("ExchangePublishedUser.",$null)):$($entry.AccessRights)" + ";" + $external)
+                    $external = ("$($entry.User.RecipientPrincipal.PrimarySmtpAddress.Replace("ExchangePublishedUser.",$null)):$($entry.AccessRights)" + ";" + $external)
                 }
                 elseif ($entry.User.UserType.ToString() -eq "Unknown") {
                     $orphaned = ("$($entry.User.DisplayName):$($entry.AccessRights)" + ";" + $orphaned)
@@ -127,7 +127,7 @@ function Get-CalendarPermissionInventory {
                 $varUser = "";$varType = "";
                 if ($entry.User.UserType.ToString() -eq "Internal") { $varUser = $entry.User.RecipientPrincipal.PrimarySmtpAddress.ToString(); $varType = "Internal" }
                 elseif ($entry.User.UserType.ToString() -eq "Default") { $varUser = $entry.User.DisplayName; $varType = "Default" }
-                elseif ($entry.User.UserType.ToString() -eq "External") { $varUser = $entry.User.DisplayName.Replace("ExchangePublishedUser.",$null); $varType = "External" }
+                elseif ($entry.User.UserType.ToString() -eq "External") { $varUser = $entry.User.RecipientPrincipal.PrimarySmtpAddress.Replace("ExchangePublishedUser.",$null); $varType = "External" }
                 elseif ($entry.User.UserType.ToString() -eq "Unknown") { $varUser = $entry.User.DisplayName; $varType = "Orphaned" }
                 else { continue }
                     
