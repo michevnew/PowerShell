@@ -96,7 +96,7 @@ function Get-CalendarPermissionInventory {
             $internal = "";$external = "";$orphaned = ""
             foreach ($entry in $MBrights) {
                 if ($entry.User.UserType.ToString() -eq "Internal") {
-                    $internal = ("$($entry.User.ADRecipient.PrimarySmtpAddress.ToString()):$($entry.AccessRights)" + ";" + $internal)
+                    $internal = ("$($entry.User.RecipientPrincipal.PrimarySmtpAddress.ToString()):$($entry.AccessRights)" + ";" + $internal)
                 }
                 elseif ($entry.User.UserType.ToString() -eq "External") {
                     $external = ("$($entry.User.DisplayName.Replace("ExchangePublishedUser.",$null)):$($entry.AccessRights)" + ";" + $external)
@@ -125,7 +125,7 @@ function Get-CalendarPermissionInventory {
                 Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Calendar folder" -Value $calendarfolder
 
                 $varUser = "";$varType = "";
-                if ($entry.User.UserType.ToString() -eq "Internal") { $varUser = $entry.User.ADRecipient.PrimarySmtpAddress.ToString(); $varType = "Internal" }
+                if ($entry.User.UserType.ToString() -eq "Internal") { $varUser = $entry.User.RecipientPrincipal.PrimarySmtpAddress.ToString(); $varType = "Internal" }
                 elseif ($entry.User.UserType.ToString() -eq "Default") { $varUser = $entry.User.DisplayName; $varType = "Default" }
                 elseif ($entry.User.UserType.ToString() -eq "External") { $varUser = $entry.User.DisplayName.Replace("ExchangePublishedUser.",$null); $varType = "External" }
                 elseif ($entry.User.UserType.ToString() -eq "Unknown") { $varUser = $entry.User.DisplayName; $varType = "Orphaned" }
@@ -145,4 +145,4 @@ function Get-CalendarPermissionInventory {
 }
 
 #Invoke the Get-CalendarPermissionInventory function and pass the command line parameters. Make sure the output is stored in a variable for reuse, even if not specified in the input!
-Get-CalendarPermissionInventory @PSBoundParameters -OutVariable global:varPermissions  | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_CalendarPermissions.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
+Get-CalendarPermissionInventory @PSBoundParameters -OutVariable global:varPermissions  #| Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_CalendarPermissions.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
