@@ -177,4 +177,4 @@ function Get-MailboxFolderPermissionInventory {
 }
 
 #Invoke the Get-MailboxFolderPermissionInventory function and pass the command line parameters. Make sure the output is stored in a variable for reuse, even if not specified in the input!
-Get-MailboxFolderPermissionInventory @PSBoundParameters -OutVariable global:varPermissions #| Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_MailboxFolderPermissions.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
+Get-MailboxFolderPermissionInventory @PSBoundParameters -OutVariable global:varPermissions | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_MailboxFolderPermissions.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
