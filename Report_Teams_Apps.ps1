@@ -20,15 +20,24 @@ $authHeader1 = @{
    'Authorization'="Bearer $token"
 }
 
-$Teams = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/beta/groups?`$filter=resourceProvisioningOptions/Any(x:x eq 'Team')" -ErrorAction Stop
-$Teams = ($Teams.Content | ConvertFrom-Json).Value
+$Teams = @()
+$uri = "https://graph.microsoft.com/beta/groups?`$filter=resourceProvisioningOptions/Any(x:x eq 'Team')"
+do {
+    $result = Invoke-WebRequest -Headers $AuthHeader1 -Uri $uri -ErrorAction Stop
+    $uri = $result.'@odata.nextLink'
+    #If we are getting multiple pages, best add some delay to avoid throttling
+    Start-Sleep -Milliseconds 500
+    $Teams += ($result.Content | ConvertFrom-Json).Value
+} while ($uri)
+
+
 
 $ReportApps = @();$ReportTabs = @();$count = 1
 foreach ($team in $Teams) {
 
     #Progress message
     $ActivityMessage = "Retrieving data for team $($team.displayName). Please wait..."
-    $StatusMessage = ("Processing site {0} of {1}: {2}" -f $count, @($Teams).count, $team.id)
+    $StatusMessage = ("Processing team {0} of {1}: {2}" -f $count, @($Teams).count, $team.id)
     $PercentComplete = ($count / @($Teams).count * 100)
     Write-Progress -Activity $ActivityMessage -Status $StatusMessage -PercentComplete $PercentComplete
     $count++
@@ -76,5 +85,5 @@ foreach ($team in $Teams) {
         }
     }
 }
-$ReportApps | select * -ExcludeProperty Number | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_TeamsAppsReport.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
-$ReportTabs | select * -ExcludeProperty Number | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_TeamsTabsReport.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
+$ReportApps | select * -ExcludeProperty Number #| Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_TeamsAppsReport.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
+$ReportTabs | select * -ExcludeProperty Number #| Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_TeamsTabsReport.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
