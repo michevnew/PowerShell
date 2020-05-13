@@ -85,5 +85,5 @@ foreach ($team in $Teams) {
         }
     }
 }
-$ReportApps | select * -ExcludeProperty Number #| Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_TeamsAppsReport.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
-$ReportTabs | select * -ExcludeProperty Number #| Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_TeamsTabsReport.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
+$ReportApps | select * -ExcludeProperty Number | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_TeamsAppsReport.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
+$ReportTabs | select * -ExcludeProperty Number | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_TeamsTabsReport.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
