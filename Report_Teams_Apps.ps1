@@ -21,7 +21,7 @@ $authHeader1 = @{
 }
 
 $Teams = @()
-$uri = "https://graph.microsoft.com/beta/groups?`$filter=resourceProvisioningOptions/Any(x:x eq 'Team')"
+$uri = "https://graph.microsoft.com/beta/groups?`$filter=resourceProvisioningOptions/Any(x:x eq 'Team')&`$top=999"
 do {
     $result = Invoke-WebRequest -Headers $AuthHeader1 -Uri $uri -ErrorAction Stop
     $uri = $result.'@odata.nextLink'
