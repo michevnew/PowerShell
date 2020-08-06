@@ -65,48 +65,51 @@ $result = ($CAs.Content | ConvertFrom-Json).Value
 
 $output = @();
 foreach ($r in $result) {
-    $CAinfo = New-Object PSObject
-    $CAinfo | Add-Member -MemberType NoteProperty -Name Id -Value $r.id
-    $CAinfo | Add-Member -MemberType NoteProperty -Name Name -Value $r.displayName
-    $CAinfo | Add-Member -MemberType NoteProperty -Name State -Value $r.state
-    $CAinfo | Add-Member -MemberType NoteProperty -Name Created -Value $r.createdDateTime
-    $CAinfo | Add-Member -MemberType NoteProperty -Name Modified -Value $r.modifiedDateTime
+     $reportLine=[ordered]@{
+        'Id' =$r.id
+        'Name' =$r.displayName
+        'State' =$r.state
+        'Created' =$r.createdDateTime
+        'Modified' =$r.modifiedDateTime
 
-    #conditions
-    $CAinfo | Add-Member -MemberType NoteProperty -Name cRiskLevel -Value ($r.conditions.signInRiskLevels -join ";")
-    $CAinfo | Add-Member -MemberType NoteProperty -Name cClientApp -Value ($r.conditions.clientAppTypes -join ";")
-    $CAinfo | Add-Member -MemberType NoteProperty -Name cDeviceState -Value ($r.conditions.deviceStates -join ";")
-    #$CAinfo | Add-Member -MemberType NoteProperty -Name cDevices -Value $r.conditions.devices #deprecated, exclude
-    $CAinfo | Add-Member -MemberType NoteProperty -Name cApplications -Value ("Included: $($r.conditions.applications.includeApplications -join ',')" + ";Excluded: $($r.conditions.applications.excludeApplications -join ',')" + ";Actions: $($r.conditions.applications.includeUserActions -join ',')")
-    #$CAinfo | Add-Member -MemberType NoteProperty -Name cUsers -Value ("Included: $($r.conditions.users.includeUsers -join ',')" + ";Excluded: $($r.conditions.users.excludeUsers -join ',')")
-    $CAinfo | Add-Member -MemberType NoteProperty -Name cUsers -Value ("Included: $(ReturnIdentifiers $r.conditions.users.includeUsers)" + ";Excluded: $(ReturnIdentifiers $r.conditions.users.excludeUsers)")
-    #$CAinfo | Add-Member -MemberType NoteProperty -Name cGroups -Value ("Included: $($r.conditions.users.includeGroups -join ',')" + ";Excluded: $($r.conditions.users.excludeGroups -join ',')")
-    $CAinfo | Add-Member -MemberType NoteProperty -Name cGroups -Value ("Included: $(ReturnIdentifiers $r.conditions.users.includeGroups)" + ";Excluded: $(ReturnIdentifiers $r.conditions.users.excludeGroups)")
-    #$CAinfo | Add-Member -MemberType NoteProperty -Name cRoles -Value ("Included: $($r.conditions.users.includeRoles -join ',')" + ";Excluded: $($r.conditions.users.excludeRoles -join ',')")
-    $CAinfo | Add-Member -MemberType NoteProperty -Name cRoles -Value ("Included: $(ReturnIdentifiers $r.conditions.users.includeRoles)" + ";Excluded: $(ReturnIdentifiers $r.conditions.users.excludeRoles)")
-    $CAinfo | Add-Member -MemberType NoteProperty -Name cPlatforms -Value ("Included: $($r.conditions.platforms.includePlatforms -join ',')" + ";Excluded: $($r.conditions.platforms.excludePlatforms -join ',')")
-    $CAinfo | Add-Member -MemberType NoteProperty -Name cLocations -Value ("Included: $($r.conditions.locations.includeLocations -join ',')" + ";Excluded: $($r.conditions.locations.excludeLocations -join ',')")
+        #conditions
+        'cRiskLevel' =($r.conditions.signInRiskLevels -join ";")
+        'cClientApp' =($r.conditions.clientAppTypes -join ";")
+        'cDeviceState' =($r.conditions.deviceStates -join ";")
+        #'cDevices' =$r.conditions.devices #deprecated, exclude
+        'cApplications' =("Included: $($r.conditions.applications.includeApplications -join ',')" + ";Excluded: $($r.conditions.applications.excludeApplications -join ',')" + ";Actions: $($r.conditions.applications.includeUserActions -join ',')")
+        #'cUsers' =("Included: $($r.conditions.users.includeUsers -join ',')" + ";Excluded: $($r.conditions.users.excludeUsers -join ',')")
+        'cUsers' =("Included: $(ReturnIdentifiers $r.conditions.users.includeUsers)" + ";Excluded: $(ReturnIdentifiers $r.conditions.users.excludeUsers)")
+        #'cGroups' =("Included: $($r.conditions.users.includeGroups -join ',')" + ";Excluded: $($r.conditions.users.excludeGroups -join ',')")
+        'cGroups' =("Included: $(ReturnIdentifiers $r.conditions.users.includeGroups)" + ";Excluded: $(ReturnIdentifiers $r.conditions.users.excludeGroups)")
+        #'cRoles' =("Included: $($r.conditions.users.includeRoles -join ',')" + ";Excluded: $($r.conditions.users.excludeRoles -join ',')")
+        'cRoles' =("Included: $(ReturnIdentifiers $r.conditions.users.includeRoles)" + ";Excluded: $(ReturnIdentifiers $r.conditions.users.excludeRoles)")
+        'cPlatforms' =("Included: $($r.conditions.platforms.includePlatforms -join ',')" + ";Excluded: $($r.conditions.platforms.excludePlatforms -join ',')")
+        'cLocations' =("Included: $($r.conditions.locations.includeLocations -join ',')" + ";Excluded: $($r.conditions.locations.excludeLocations -join ',')")
+    }
 
     #conrtos
     if ($r.grantControls) {
-        $CAinfo | Add-Member -MemberType NoteProperty -Name aActions -Value ($r.grantControls.builtInControls -join ";")
-        $CAinfo | Add-Member -MemberType NoteProperty -Name aToU -Value ($r.grantControls.termsOfUse -join ";")
-        $CAinfo | Add-Member -MemberType NoteProperty -Name aCustom -Value ($r.grantControls.customAuthenticationFactors -join ";")
-        $CAinfo | Add-Member -MemberType NoteProperty -Name aOperator -Value $r.grantControls.operator
+        $reportLine.'aActions' =($r.grantControls.builtInControls -join ";")
+        $reportLine.'aToU' =($r.grantControls.termsOfUse -join ";")
+        $reportLine.'aCustom' =($r.grantControls.customAuthenticationFactors -join ";")
+        $reportLine.'aOperator' =$r.grantControls.operator
     }
 
     #session controls
     if ($r.sessionControls) {
-        $CAinfo | Add-Member -MemberType NoteProperty -Name sesRestriction -Value (&{If($r.sessionControls.applicationEnforcedRestrictions.isEnabled) {"Enabled"} Else {"Not enabled"}}) 
-        $CAinfo | Add-Member -MemberType NoteProperty -Name sesMCAS -Value $r.sessionControls.cloudAppSecurity
-        $CAinfo | Add-Member -MemberType NoteProperty -Name sesBrowser -Value $r.sessionControls.persistentBrowser
-        $CAinfo | Add-Member -MemberType NoteProperty -Name sesSignInFrequency -Value (&{If($r.sessionControls.signInFrequency.value) {"Enabled"} Else {"Not enabled"}})
-        if ($r.sessionControls.signInFrequency.value) { $CAinfo | Add-Member -MemberType NoteProperty -Name sesSignInFrequencyPeriod -Value "$($r.sessionControls.signInFrequency.value) $($r.sessionControls.signInFrequency.type)" }
+        $reportLine.'sesRestriction' =(&{If($r.sessionControls.applicationEnforcedRestrictions.isEnabled) {"Enabled"} Else {"Not enabled"}}) 
+        $reportLine.'sesMCAS' =$r.sessionControls.cloudAppSecurity
+        $reportLine.'sesBrowser' =$r.sessionControls.persistentBrowser
+        $reportLine. 'sesSignInFrequency' =(&{If($r.sessionControls.signInFrequency.value) {"Enabled"} Else {"Not enabled"}})
+        if ($r.sessionControls.signInFrequency.value) { $reportLine.'sesSignInFrequencyPeriod' ="$($r.sessionControls.signInFrequency.value) $($r.sessionControls.signInFrequency.type)" }
     }
-    $output += $CAinfo
+    
+    $output += @([pscustomobject]$reportLine)
 }
 
 #return output to console
-$output | select Name,State,Created,Modified,aActions,aCustom,aOperator,aToU,cApplications,cClientApp,cDeviceState,cGroups,cLocations,cPlatforms,cRiskLevel,cRoles,cUsers,cUsers2,sesBrowser,sesMCAS,sesRestriction,sesSignInFrequency,sesSignInFrequencyPeriod #| ogv
+$output | fl
+#$output | ogv
 #export to CSV
-$output | select Id,Name,State,Created,Modified,aActions,aCustom,aOperator,aToU,cApplications,cClientApp,cDeviceState,cGroups,cLocations,cPlatforms,cRiskLevel,cRoles,cUsers,sesBrowser,sesMCAS,sesRestriction,sesSignInFrequency,sesSignInFrequencyPeriod | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_CApolicies.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
+$output | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_CApolicies.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
