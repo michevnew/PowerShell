@@ -31,9 +31,9 @@ $Output = @()
 $count = 1; $PercentComplete = 0;
 foreach ($device in $GraphDevices) {
     #Simple progress indicator
-    $ActivityMessage = "Retrieving data for user $($user.displayName). Please wait..."
-    $StatusMessage = ("Processing user {0} of {1}: {2}" -f $count, @($GraphUsers).count, $user.userPrincipalName)
-    $PercentComplete = ($count / @($GraphUsers).count * 100)
+    $ActivityMessage = "Retrieving data for user $($device.displayName). Please wait..."
+    $StatusMessage = ("Processing user {0} of {1}: {2}" -f $count, @($GraphDevices).count, $device.id)
+    $PercentComplete = ($count / @($GraphDevices).count * 100)
     Write-Progress -Activity $ActivityMessage -Status $StatusMessage -PercentComplete $PercentComplete
     $count++
 
