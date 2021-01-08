@@ -24,7 +24,7 @@ function Check-Connectivity {
     #IF using the SG parameter
     if ($IncludeAADSecurityGroups) {
         Write-Verbose "Checking connectivity to Azure AD..."
-        if (!(Get-Module AzureAD -ListAvailable -Verbose:$false | ? {($_.Version.Major -eq 2 -and $_.Version.Build -eq 0 -and $_.Version.Revision -gt 55) -or ($_.Version.Major -eq 2 -and $_.Version.Build -eq 1)})) { Write-Host -BackgroundColor Red "This script requires a recent version of the AzureAD PowerShell module. Download it here: https://www.powershellgallery.com/packages/AzureAD/"; return}
+        if (!(Get-Module AzureAD -ListAvailable -Verbose:$false | ? {($_.Version.Major -eq 2 -and $_.Version.Build -eq 2 -and $_.Version.Revision -gt 55) -or ($_.Version.Major -eq 2 -and $_.Version.Build -eq 1)})) { Write-Host -BackgroundColor Red "This script requires a recent version of the AzureAD PowerShell module. Download it here: https://www.powershellgallery.com/packages/AzureAD/"; return}
         try { Get-AzureADCurrentSessionInfo -ErrorAction Stop -WhatIf:$false -Verbose:$false | Out-Null }
         catch { try { Connect-AzureAD -WhatIf:$false -Verbose:$false -ErrorAction Stop | Out-Null } catch { return $false } }
     }
