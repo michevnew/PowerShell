@@ -1,4 +1,4 @@
-﻿#Requires -Version 3.0
+#Requires -Version 3.0
 #Make sure to fill in all the required variables before running the script
 #Also make sure the AppID used corresponds to an app with sufficient permissions, as follows:
 #    Directory.Read.All (hard-requirement for oauth2PermissionGrants, covers everything else needed)
@@ -112,7 +112,7 @@ do {
 
 $SPperm = @{} #hash-table to store data for app roles and stuff
 $SPusers = @{} #hash-table to store data for users assigned delegate permissions and stuff
-$Output = @() #output variable
+$output = [System.Collections.Generic.List[Object]]::new() #output variable
 $i=0; $count = 1; $PercentComplete = 0;
 
 foreach ($SP in $SPs) {
@@ -134,28 +134,35 @@ foreach ($SP in $SPs) {
 
     $OAuthperm = @{};
     $assignedto = @();$resID = $null; $userId = $null;
-    $objPermissions = New-Object PSObject
 
     #prepare the output object
-    $i++;Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Number" -Value $i
-    Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Application Name" -Value $SP.appDisplayName
-    Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "ApplicationId" -Value $SP.AppId
-    Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Publisher" -Value $SP.PublisherName
-    Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Verified" -Value (&{if ($SP.verifiedPublisher.verifiedPublisherId) {$SP.verifiedPublisher.displayName} else {"Not verified"}})
-    Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Homepage" -Value $SP.Homepage
-    Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "SP name" -Value $SP.displayName
-    Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "ObjectId" -Value $SP.id
-    Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Created on" -Value $SP.createdDateTime
-    Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Enabled" -Value $SP.AccountEnabled
+    $i++;$objPermissions = [PSCustomObject][ordered]@{
+        "Number" = $i
+        "Application Name" = $SP.appDisplayName
+        "ApplicationId" = $SP.AppId
+        "Publisher" = $SP.PublisherName
+        "Verified" = (&{if ($SP.verifiedPublisher.verifiedPublisherId) {$SP.verifiedPublisher.displayName} else {"Not verified"}})
+        "Homepage" = $SP.Homepage
+        "SP name" = $SP.displayName
+        "ObjectId" = $SP.id
+        "Created on" = (Get-Date($SP.createdDateTime) -format g)
+        "Enabled" = $SP.AccountEnabled
+        "Last modified" = $null
+        "Permissions (application)" = $null
+        "Authorized By (application)" = $null
+        "Permissions (delegate)" = $null
+        "Valid until (delegate)" = $null
+        "Authorized By (delegate)" = $null
+    }
 
     #process application permissions entries
     if (!$appRoleAssignments) { Write-Verbose "No application permissions to report on for SP $($SP.id), skipping..." }
     else {
-        Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Last modified" -Value ($appRoleAssignments.CreationTimestamp | select -Unique | sort -Descending | select -First 1)
+        $objPermissions.'Last modified' = (Get-Date($appRoleAssignments.CreationTimestamp | select -Unique | sort -Descending | select -First 1) -format g)
     
         parse-AppPermissions $appRoleAssignments
-        Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Permissions (application)" -Value (($OAuthperm.GetEnumerator() | % { "$($_.Name):$($_.Value.ToString().TrimStart(','))"}) -join ";")
-        Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Authorized By (application)" -Value "An administrator (application permissions)"
+        $objPermissions.'Permissions (application)' = (($OAuthperm.GetEnumerator()  | % { "$($_.Name):$($_.Value.ToString().TrimStart(','))"}) -join ";")
+        $objPermissions.'Authorized By (application)' = "An administrator (application permissions)"
     }
     
 
@@ -172,18 +179,16 @@ foreach ($SP in $SPs) {
     if (!$oauth2PermissionGrants) { Write-Verbose "No delegate permissions to report on for SP $($SP.id), skipping..." }
     else {
         parse-DelegatePermissions $oauth2PermissionGrants
-        Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Permissions (delegate)" -Value (($OAuthperm.GetEnumerator() | % { "$($_.Name):$($_.Value.ToString().TrimStart(','))"}) -join ";")
-
-        Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Valid until (delegate)" -Value ($oauth2PermissionGrants.ExpiryTime | select -Unique | sort -Descending | select -First 1)
+        $objPermissions.'Permissions (delegate)' = (($OAuthperm.GetEnumerator() | % { "$($_.Name):$($_.Value.ToString().TrimStart(','))"}) -join ";")
+        $objPermissions.'Valid until (delegate)' = (Get-Date($oauth2PermissionGrants.ExpiryTime | select -Unique | sort -Descending | select -First 1) -format g)
         
         if (($oauth2PermissionGrants.ConsentType | select -Unique) -eq "AllPrincipals") { $assignedto += "All users (admin consent)" }
         $assignedto +=  @($OAuthperm.Keys) | % {if ($_ -match "\((.*@.*)\)") {$Matches[1]}}
-        Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Authorized By (delegate)" -Value (($assignedto | select -Unique) -join ",")
+        $objPermissions.'Authorized By (delegate)' = (($assignedto | select -Unique) -join ",")
     }
 
-    $Output += $objPermissions
+    $output.Add($objPermissions)
 }
 
 #Export the result to CSV file
-$Output | select 'Application name', 'ApplicationId', 'Publisher', 'Verified', 'Homepage', 'SP name', 'ObjectId', 'Created on', 'Enabled', 'Last modified', 'Permissions (application)', 'Authorized By (application)',`
-'Permissions (delegate)', 'Valid until (delegate)', 'Authorized By (delegate)' | Export-CSV -nti -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_GraphAppInventory.csv"
+$output | select * -ExcludeProperty Number | Export-CSV -nti -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_GraphAppInventory.csv"
