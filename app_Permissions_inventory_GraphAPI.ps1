@@ -145,7 +145,7 @@ foreach ($SP in $SPs) {
         "Homepage" = $SP.Homepage
         "SP name" = $SP.displayName
         "ObjectId" = $SP.id
-        "Created on" = (Get-Date($SP.createdDateTime) -format g)
+        "Created on" = (&{if ($SP.createdDateTime) {(Get-Date($SP.createdDateTime) -format g)} else { $null }})
         "Enabled" = $SP.AccountEnabled
         "Last modified" = $null
         "Permissions (application)" = $null
