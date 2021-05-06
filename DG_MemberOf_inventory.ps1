@@ -75,7 +75,7 @@ function Get-DGMembershipInventory {
         $MBList = Invoke-Command -Session $session -ScriptBlock { Get-Recipient -ResultSize Unlimited -RecipientTypeDetails UserMailbox,SharedMailbox,MailUser,MailContact,GuestMailUser | Select-Object -Property PrimarySmtpAddress,DistinguishedName,ExternalEmailAddress,ExternalDirectoryObjectId } -HideComputerName
     }
     elseif (!$included -or ($included -eq "UserMailbox" -and $Included.Length -eq 1)) {
-        $MBList = Invoke-Command -Session $session -ScriptBlock { Get-Recipient gosho -ResultSize Unlimited -RecipientTypeDetails UserMailbox | Select-Object -Property PrimarySmtpAddress,DistinguishedName,ExternalEmailAddress,ExternalDirectoryObjectId } -HideComputerName
+        $MBList = Invoke-Command -Session $session -ScriptBlock { Get-Recipient -ResultSize Unlimited -RecipientTypeDetails UserMailbox | Select-Object -Property PrimarySmtpAddress,DistinguishedName,ExternalEmailAddress,ExternalDirectoryObjectId } -HideComputerName
     }
     else {
         $MBList = Invoke-Command -Session $session -ScriptBlock { Get-Recipient -ResultSize Unlimited -RecipientTypeDetails $Using:included | Select-Object -Property PrimarySmtpAddress,DistinguishedName,ExternalEmailAddress,ExternalDirectoryObjectId } -HideComputerName
