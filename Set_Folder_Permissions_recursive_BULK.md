@@ -34,6 +34,6 @@ You can also directly use the output of Get-Mailbox or Get-User to provide value
 ```
 By default the script outputs the results to a CSV file and also stores them in the $varFolderPermissionsAdded variable. To suppress the Console output, use the -Quiet switch.
 
-Additional information about the script can be found in the built-in help or in this article. 
+Additional information about the script can be found in the built-in help or in https://www.michev.info/Blog/Post/3380/setting-mailbox-folder-permissions-in-bulk-via-powershell. 
 
 Questions and feedback are welcome.
