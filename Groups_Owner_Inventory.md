@@ -16,6 +16,6 @@ By default the script outputs the results to the host window and also stores the
 ```PowerShell
 $varOwners | Export-Csv -NoTypeInformation "GroupOwners.csv"
 ```
-Additional information about the script can be found in [this article](https://www.cogmotive.com/blog/powershell/new-script-office-365-aliases-inventory). 
+Additional information about the script can be found in [this article](https://www.michev.info/Blog/Post/3371/office-365-group-owners-report). 
 
 Questions and feedback are welcome.
