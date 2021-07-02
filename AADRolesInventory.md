@@ -6,7 +6,7 @@ If existing session to Azure AD is detected, the script will try to reuse it. Ot
  
 The output will list the users and service principals with admin roles assigned sorted by their display name. Multiple role assignments for the same user are concatenated together in the "Roles" field. To export the output to a CSV file, remove the comment mark from the last line of the script.
  
-Additional information about the script can be found at: https://www.quadrotech-it.com/blog/office-365-permissions-inventory-series-azure-ad-admin-roles/
+Additional information about the script can be found at: https://www.michev.info/Blog/Post/3350/office-365-permissions-inventory-azure-ad-admin-roles
  
 Questions and feedback are welcome.
 
