@@ -39,6 +39,6 @@ To exclude permissions entries for specific user(s), specify the email address(e
 ```PowerShell
 .\Mailbox_Folder_Permissions_inventory.ps1 -ExcludeUsers admin@domain.com,serviceaccount@domain.com
 ```
-Additional information about the script can be found in [this article](https://www.cogmotive.com/blog/powershell/mailbox-folder-permissions). 
+Additional information about the script can be found in [this article](https://www.michev.info/Blog/Post/3519/office-365-permission-inventory-calendar-permissions). 
 
 Questions and feedback are welcome.
