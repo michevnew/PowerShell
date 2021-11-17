@@ -53,7 +53,7 @@ $plansToEnable = @("MICROSOFTBOOKINGS","b737dad2-2f6c-4c65-90e3-ca563267e8b9")
 
 #Loop over each entry
 $count = 1; $PercentComplete = 0;
-foreach ($user in $users[0..2]) {
+foreach ($user in $users) {
     #Simple progress indicator
     $ActivityMessage = "Retrieving data for user $($user.displayName). Please wait..."
     $StatusMessage = ("Processing user {0} of {1}: {2}" -f $count, @($users).count, $user.UserPrincipalName)
