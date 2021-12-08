@@ -15,6 +15,6 @@ By default the script outputs the results to the console host and also stores th
 Get-SOBPermissionInventory -IncludeAll -OutVariable var  
 $var | Export-Csv -NoTypeInformation "accessrights.csv"
 ```
-Additional information about the script can be found at: https://www.cogmotive.com/blog/powershell-scripts/office-365-permissions-inventory-send-on-behalf-of
+Additional information about the script can be found at: https://www.michev.info/Blog/Post/3601/office-365-permissions-inventory-send-on-behalf-of
 
 Questions and feedback are welcome.
