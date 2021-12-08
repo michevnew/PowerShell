@@ -20,6 +20,6 @@ $var | Export-Csv -NoTypeInformation "MailboxPermissions.csv"
 
 Alternatively, remove the comment mark in the last line of the script. If the script fails too often due to connectivity issues, you can consider uncommenting line 95 to force the script to write to the CSV file after each iteration.
  
-Additional information about the script can be found at: https://www.cogmotive.com/blog/powershell-scripts/office-365-permissions-inventory-full-access
+Additional information about the script can be found at: https://www.michev.info/Blog/Post/3586/office-365-permissions-inventory-full-access
 
 Questions and feedback are welcome.
