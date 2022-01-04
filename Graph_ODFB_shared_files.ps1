@@ -157,7 +157,7 @@ function getPermissions {
         #Sharing link
         if ($entry.link) {
             $strPermissions = $($entry.link.type) + ":" + $($entry.link.scope)
-            if ($entry.grantedToIdentities) { $strPermissions = $strPermissions + " (" + (($entry.grantedToIdentities.user.email | select -Unique) -join ",") + ")" }
+            if ($entry.grantedToIdentitiesV2) { $strPermissions = $strPermissions + " (" + (((&{If($entry.grantedToIdentitiesV2.siteUser.email) {$entry.grantedToIdentitiesV2.siteUser.email} else {$entry.grantedToIdentitiesV2.User.email}}) | select -Unique) -join ",") + ")" }
             if ($entry.hasPassword) { $strPermissions = $strPermissions + "[PasswordProtected]" }
             if ($entry.link.preventsDownload) { $strPermissions = $strPermissions + "[BlockDownloads]" }
             if ($entry.expirationDateTime) { $strPermissions = $strPermissions + " (Expires on: $($entry.expirationDateTime))" }
@@ -166,8 +166,12 @@ function getPermissions {
         #Invitation
         elseif ($entry.invitation) { $permlist += $($entry.roles) + ":" + $($entry.invitation.email) }
         #Direct permissions
-        elseif ($entry.roles) { 
-            $permlist += $($entry.Roles) + ':' + (&{If($entry.GrantedTo.User.Email) { $($entry.GrantedTo.User.Email) } Else {$($entry.GrantedTo.User.DisplayName)}}) #apparently the email property can be empty...
+        elseif ($entry.roles) {
+            if ($entry.grantedToV2.siteUser.Email) { $roleentry = $entry.grantedToV2.siteUser.Email }
+            elseif ($entry.grantedToV2.User.Email) { $roleentry = $entry.grantedToV2.User.Email }
+            #else { $roleentry = $entry.grantedToV2.siteUser.DisplayName }
+            else { $roleentry = $entry.grantedToV2.siteUser.loginName } #user claim
+            $permlist += $($entry.Roles) + ':' + $roleentry #apparently the email property can be empty...
         }
         #Inherited permissions
         elseif ($entry.inheritedFrom) { $permlist += "[Inherited from: $($entry.inheritedFrom.path)]" } #Should have a Roles facet, thus covered above
@@ -180,18 +184,32 @@ function getPermissions {
 }
 
 function Renew-Token {
-    #Remove-Variable -Name authHeader -Scope Global
+    #prepare the request
+    $url = 'https://login.microsoftonline.com/' + $tenantId + '/oauth2/v2.0/token'
 
-    if (!$authContext) { Write-Error "Auth context missing, unable to obtain token!" -ErrorAction Stop; throw }
+    $Scopes = New-Object System.Collections.Generic.List[string]
+    $Scope = "https://graph.microsoft.com/.default"
+    $Scopes.Add($Scope)
 
-    Set-Variable -Name authenticationResult -Scope Global -Value $authContext.AcquireTokenAsync("https://graph.microsoft.com", $ccred)
-    if (!$authenticationResult.Result.AccessToken) { Write-Error "Failed to aquire token!" -ErrorAction Stop; throw }
+    $body = @{
+        grant_type = "client_credentials"
+        client_id = $appID
+        client_secret = $client_secret
+        scope = $Scopes
+    }
+
+    try { 
+        Set-Variable -Name authenticationResult -Scope Global -Value (Invoke-WebRequest -Method Post -Uri $url -Debug -Verbose -Body $body)
+        $token = ($authenticationResult.Content | ConvertFrom-Json).access_token
+    }
+    catch { $_; return }
+
+    if (!$token) { Write-Host "Failed to aquire token!"; return }
     else {
-        Write-Verbose "Successfully renewed Access Token, valid until $($authenticationResult.Result.ExpiresOn.UtcDateTime)"
-
+        Write-Verbose "Successfully acquired Access Token"
+        
         #Use the access token to set the authentication header
-        Set-Variable -Name authHeader -Scope Global -Value @{'Authorization'=$authenticationResult.Result.CreateAuthorizationHeader()}
-        #return $authHeader
+        Set-Variable -Name authHeader -Scope Global -Value @{'Authorization'="Bearer $token";'Content-Type'='application\json'}
     }
 }
 
@@ -238,28 +256,11 @@ function Invoke-GraphApiRequest {
 #==========================================================================
 
 #Variables to configure
-$ADALpath = 'C:\Program Files\WindowsPowerShell\Modules\AzureAD\2.0.2.16\Microsoft.IdentityModel.Clients.ActiveDirectory.dll' #path to Microsoft.IdentityModel.Clients.ActiveDirectory.dll
 $tenantID = "tenant.onmicrosoft.com" #your tenantID or tenant root domain
 $appID = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" #the GUID of your app. For best result, use app with Sites.ReadWrite.All scope granted.
 $client_secret = "verylongsecurestring" #client secret for the app
 
-#Needs the ADAL binaries to obtain token. Replace with the path to your version of Microsoft.IdentityModel.Clients.ActiveDirectory.dll!
-try { Add-Type -Path $ADALpath -ErrorAction Stop }
-catch { Write-Error "Unable to load ADAL binaries, make sure you are using the correct path!" -ErrorAction Stop }
-
-#Obtain access token
-$authContext = New-Object "Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext" -ArgumentList "https://login.windows.net/$tenantID"
-$ccred = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.ClientCredential -ArgumentList $appID,$client_secret
-
-try { $global:authenticationResult = $authContext.AcquireTokenAsync("https://graph.microsoft.com", $ccred) }
-catch { $_; return }
-
-if (!$authenticationResult.Result.AccessToken) { Write-Host "Failed to aquire token! Run '`$authenticationResult.Exception | fl * -Force' to get more detail" -ForegroundColor Red; return }
-else { $AccessTokenObj = $authenticationResult.Result }
-Write-Verbose "Successfully acquired Access Token, valid until $($AccessTokenObj.ExpiresOn.UtcDateTime)"
-
-#Use the access token to set the authentication header
-$global:authHeader = @{'Authorization'=$authenticationResult.Result.CreateAuthorizationHeader()}
+Renew-Token
 
 #Used to determine whether sharing is done externally, needs Directory.Read.All scope.
 $domains = (Invoke-GraphApiRequest -uri "https://graph.microsoft.com/v1.0/domains" -Verbose:$VerbosePreference).Value | ? {$_.IsVerified -eq "True"} | select -ExpandProperty Id
@@ -270,7 +271,7 @@ if ($ExpandFolders -and ($depth -le 0)) { $depth = 0 }
 
 #Get a list of all users, make sure to handle multiple pages
 $GraphUsers = @()
-$uri = "https://graph.microsoft.com/v1.0/users?$`select=displayName,mail,userPrincipalName,id,userType&`$top=999&`$filter=userType eq 'Member'"
+$uri = "https://graph.microsoft.com/v1.0/users/?$`select=displayName,mail,userPrincipalName,id,userType&`$top=999&`$filter=userType eq 'Member'"
 do {
     $result = Invoke-GraphApiRequest -Uri $uri -Verbose:$VerbosePreference -ErrorAction Stop
     $uri = $result.'@odata.nextLink'
@@ -278,7 +279,6 @@ do {
     Start-Sleep -Milliseconds 500
     $GraphUsers += $result.Value
 } while ($uri)
-
 
 #Get the drive for each user and enumerate files
 $Output = @()
@@ -310,5 +310,5 @@ foreach ($user in $GraphUsers) {
 #Return the output
 #$Output | select OneDriveOwner,Name,ItemType,Shared,ExternallyShared,Permissions,ItemPath | ? {$_.Shared -eq "Yes"} | Ogv -PassThru
 $global:varODFBSharedItems = $Output | select OneDriveOwner,Name,ItemType,Shared,ExternallyShared,Permissions,ItemPath | ? {$_.Shared -eq "Yes"}
-$Output | select OneDriveOwner,Name,ItemType,Shared,ExternallyShared,Permissions,ItemPath | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_ODFBSharedItems.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
+#$Output | select OneDriveOwner,Name,ItemType,Shared,ExternallyShared,Permissions,ItemPath | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_ODFBSharedItems.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
 return $global:varODFBSharedItems
