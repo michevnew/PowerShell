@@ -26,3 +26,4 @@ Additional information about the script can be found at: https://practical365.co
 Questions and feedback are welcome.
 
 /// Updated the script to handle access token renewal, added better error handling, filter out Guest users.
+/// 04.01.2022 Updated the script to use grantedToV2 and grantedToIdentitiesV2 properties, removed ADAL dependencies.
