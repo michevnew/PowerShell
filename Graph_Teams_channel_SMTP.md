@@ -2,7 +2,7 @@
 
 The script uses the Graph API to enumerate all Teams in the tenant, then enumerates all channels in each Team. For every channel, the information about any email addresses configured is gathered. In addition, information about any email addresses configured on the Team itself is returned.
 
-In order to use the script, you will need to first configure some variables, found between lines 8-11. First, you need a version of the ADAL binaries, which will be used to obtain an access token. Next, provide the tenantID and the AppID of an Azure AD application you've registered with the tenant. The application needs the following permissions for the script to run as expected:
+In order to use the script, you will need to first configure some variables, found between lines 8-11. Provide the tenantID and the AppID of an Azure AD application you've registered with the tenant. The application needs the following permissions for the script to run as expected:
 
 \#    Group.Read.All or Directory.Read.All to read all Groups
 \#    Group.Read.All to read Channel info
