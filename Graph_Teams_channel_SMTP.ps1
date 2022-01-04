@@ -5,7 +5,7 @@
 #    Group.Read.All to read Channel info
 
 #Variables to configure
-$ADALpath = 'C:\Program Files\WindowsPowerShell\Modules\AzureAD\2.0.2.16\Microsoft.IdentityModel.Clients.ActiveDirectory.dll' #path to Microsoft.IdentityModel.Clients.ActiveDirectory.dll
+
 $tenantID = "tenant.onmicrosoft.com" #your tenantID or tenant root domain
 $appID = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" #the GUID of your app.
 $client_secret = "verylongsecurestring" #client secret for the app
@@ -14,21 +14,36 @@ $client_secret = "verylongsecurestring" #client secret for the app
 #Main script starts here
 #==========================================================================
 
-#Needs the ADAL binaries to obtain token
-try { Add-Type -Path $ADALpath -ErrorAction Stop }
-catch { Write-Error "Unable to load ADAL binaries, make sure you are using the correct path!" -ErrorAction Stop }
-
 #Obtain access token
-$authContext = New-Object "Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext" -ArgumentList "https://login.windows.net/$tenantID"
-$ccred = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.ClientCredential -ArgumentList $appID,$client_secret
+$url = 'https://login.microsoftonline.com/' + $tenantId + '/oauth2/v2.0/token'
 
-$authenticationResult = $authContext.AcquireTokenAsync("https://graph.microsoft.com", $ccred)
-if (!$authenticationResult.Result.AccessToken) { Write-Error "Failed to aquire token!"; return }
+$Scopes = New-Object System.Collections.Generic.List[string]
+$Scope = "https://graph.microsoft.com/.default"
+$Scopes.Add($Scope)
 
-#Use the access token to set the authentication header
-$authHeader = @{'Authorization'=$authenticationResult.Result.CreateAuthorizationHeader()}
+$body = @{
+    grant_type = "client_credentials"
+    client_id = $appID
+    client_secret = $client_secret
+    scope = $Scopes
+}
+
+try { 
+    Set-Variable -Name authenticationResult -Scope Global -Value (Invoke-WebRequest -Method Post -Uri $url -Debug -Verbose -Body $body)
+    $token = ($authenticationResult.Content | ConvertFrom-Json).access_token
+}
+catch { $_; return }
+
+if (!$token) { Write-Host "Failed to aquire token!"; return }
+else {
+    Write-Verbose "Successfully acquired Access Token"
+        
+    #Use the access token to set the authentication header
+    Set-Variable -Name authHeader -Scope Global -Value @{'Authorization'="Bearer $token";'Content-Type'='application\json'}
+}
 
 #Use the /beta endpoint to fetch a list of all Teams
+#Do not switch to https://graph.microsoft.com/beta/teams as we need the Group proxy address details
 $uri = "https://graph.microsoft.com/beta/groups?`$filter=resourceProvisioningOptions/Any(x:x eq `'Team`')&`$select=id,displayName,mail,proxyAddresses,resourceBehaviorOptions,resourceProvisioningOptions,visibility"
 $result = Invoke-WebRequest -Headers $AuthHeader -Uri $uri -Verbose:$VerbosePreference
 $teams = ($result.Content | ConvertFrom-Json).Value
@@ -57,5 +72,5 @@ foreach ($team in $teams) {
 
 #return the output
 $global:varTeamChannels = $output | select Team,Visibility,Channel,ChannelEmail,TeamEmailAddresses,TeamId
-$output | select * | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_TeamsChannels.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
+#$output | select * | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_TeamsChannels.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
 return $global:varTeamChannels
