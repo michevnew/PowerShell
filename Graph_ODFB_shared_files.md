@@ -2,7 +2,7 @@
 
 The script uses the Graph API to enumerate all users in the tenant and checks for the presence of an OneDrive for Business drive. If found, all items in the drive are enumerated and if a file is shared, additional information about the permissions is gathered. Running the script without any parameters will include only the items in the "root" directory, if you want to include items in any of the (sub)folders, use the corresponding script parameters as detailed below.
 
-In order to use the script, you will need to first configure some variables, found between lines 187-191. First, you need a version of the ADAL binaries, which will be used to obtain an access token. Next, provide the tenantID and the AppID of an Azure AD application you've registered with the tenant. The application needs the following permissions for the script to run as expected:
+In order to use the script, you will need to first configure some variables, found between lines 264-266. First, you need a version of the ADAL binaries, which will be used to obtain an access token. Next, provide the tenantID and the AppID of an Azure AD application you've registered with the tenant. The application needs the following permissions for the script to run as expected:
 
 \#    User.Read.All to enumerate all users in the tenant
 
@@ -17,7 +17,7 @@ The script has two optional parameters you can use. The -ExpandFolders switch in
 ```PowerShell
 .\Graph_ODFB_shared_files.ps1 -ExpandFolders -depth 2
 ```
-To determine whether a file is externally shared, the script needs to know the list of domains configured in the company. If you have granted the corresponding permissions, it will fetch them automatically. Otherwise, you can populate the list manually at line 209.
+To determine whether a file is externally shared, the script needs to know the list of domains configured in the company. If you have granted the corresponding permissions, it will fetch them automatically. Otherwise, you can populate the list manually at line 272.
 
 By default, the script will return a filtered list of just the items that have been shared, and will also store the output in a global variable called $varODFBSharedItems in case you want to reuse it. The unfiltered output will be saved to a CSV file, which you can then format, sort and filter as needed.
 
