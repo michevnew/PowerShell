@@ -1,5 +1,7 @@
 # Office 365 Mailbox Folder Permissions Inventory
 
+UPDATED FEB 2022: Agustin Gallegos was kind enough to update the script to use the new REST-based Exchange Online cmdlets. While this breaks compatibility with on-premises installs, the original cmdlets can still be found in the code - uncomment them if you are trying to use the script against Exchange server. Do note that the previous version of the script was also incompatible with Exchange server due to the change in output made in ExO. See below.
+
 UPDATED APR 2020: Microsoft changed the output of the Get-MailboxFolderPermission in the service, it no longer returns the RecucedRecipient object but instead a PermissionSecurityPrincipal object. I've adjusted the script accodrdingly, but this mean it will no longer run as expected against on-opremises installs. You can change it manually:
 
 $entry.User.RecipientPrincipal.PrimarySmtpAddress.ToString() <-> $entry.User.ADRecipient.PrimarySmtpAddress.ToString()
