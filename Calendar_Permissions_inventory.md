@@ -24,6 +24,6 @@ If you want to use "condensed" output, limited to one line per mailbox, specify 
  
 If the script fails too often due to connectivity issues, you can consider uncommenting lines 115 and 140 to force the script to write to the CSV file after each iteration. Removing the comment mark from line 71 will add small delay between interations in order to avoid throttling.
 
-Additional information about the script can be found at: https://www.cogmotive.com/blog/powershell-scripts/office-365-permission-inventory-calendar-permissions
+Additional information about the script can be found at: https://www.michev.info/Blog/Post/3676/office-365-permission-inventory-calendar-permissions-2
 
 Questions and feedback are welcome.
