@@ -15,7 +15,7 @@ $includedfolders = @("Root","Inbox","Calendar", "Contacts", "DeletedItems", "Dra
  
 $excludedfolders = @("News Feed","Quick Step Settings","Social Activity Notifications","Suggested Contacts", "SearchDiscoveryHoldsUnindexedItemFolder", "SearchDiscoveryHoldsFolder","Calendar Logging")
 ```
-The script does not handle connectivity to Exchange Online, due to the variety of methods now available. If any existing session is detected, it will be used to run the script, otherwise an error will be thrown. Exchange on-premises is also supported, as is running the script in the EMS, but those scenarios are not extensively tested. The script requires PowerShell v3 at minimum.
+The script does not handle connectivity to Exchange Online, due to the variety of methods now available. If any existing session is detected, it will be used to run the script, otherwise an error will be thrown. Exchange on-premises is also supported, as is running the script in the EMS, but those scenarios are not extensively tested. Do note that you will have to replace line 64 to use the $_.User.ADRecipient property instead of $_.User.RecipientPrincipal, due to the difference in output between ExO and Exchange Server. The script requires PowerShell v3 at minimum.
 
 Here are some example uses of the script. To remove permissions on all folders in a specific mailbox, use:
 ```PowerShell
