@@ -61,7 +61,7 @@ function GetFolderPermissions {
     if (!$session -or ($session.State -ne "Opened")) { Write-Error "No active Exchange Remote PowerShell session detected, please connect first. To connect to ExO: https://technet.microsoft.com/en-us/library/jj984289(v=exchg.160).aspx" -ErrorAction Stop }
 
     $FolderPerm = Invoke-Command -Session $session -ScriptBlock { Get-MailboxFolderPermission $using:foldername | Select-Object Identity,User,AccessRights,SharingPermissionFlags } -HideComputerName -ErrorAction Stop `
-        | select Identity,@{n="User";e={$_.User.ADRecipient.Guid.Guid}},@{n="UserType";e={$_.User.UserType.ToString()}},@{n="UserName";e={$_.User.DisplayName}},AccessRights,SharingPermissionFlags
+        | select Identity,@{n="User";e={$_.User.RecipientPrincipal.Guid.Guid}},@{n="UserType";e={$_.User.UserType.ToString()}},@{n="UserName";e={$_.User.DisplayName}},AccessRights,SharingPermissionFlags
 
     if (!$FolderPerm) { return }
     else { return $FolderPerm }
