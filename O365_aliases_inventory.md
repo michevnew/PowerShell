@@ -19,6 +19,6 @@ $var | Export-Csv -NoTypeInformation "EmailAddresses.csv"
 ```
 A "one line per alias" formatting is used by default, you can switch to "condensed" output (one line per recipient) instead by specifying the -CondensedOutput switch.
 
-Additional information about the script can be found in [this article](https://www.cogmotive.com/blog/powershell/new-script-office-365-aliases-inventory).
+Additional information about the script can be found in [this article](https://www.michev.info/Blog/Post/3966/office-365-aliases-inventory).
 
 Questions and feedback are welcome.
