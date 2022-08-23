@@ -1,5 +1,7 @@
 ﻿param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$IncludeSoftDeleted)
 
+#For details on what the script does and how to run it, check: https://www.michev.info/Blog/Post/4021/
+
 function Get-MailboxPermissionInventory {
 <#
 .Synopsis
