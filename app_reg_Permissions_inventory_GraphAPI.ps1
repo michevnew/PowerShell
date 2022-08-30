@@ -89,7 +89,7 @@ $body = @{
 try { 
     $res = Invoke-WebRequest -Method Post -Uri $url -Verbose -Body $body
     $token = ($res.Content | ConvertFrom-Json).access_token
-    
+
     $authHeader = @{
        'Authorization'="Bearer $token"
     }}

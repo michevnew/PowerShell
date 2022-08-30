@@ -141,12 +141,12 @@ foreach ($SP in $SPs) {
         "Number" = $i
         "Application Name" = $SP.appDisplayName
         "ApplicationId" = $SP.AppId
-        "Publisher" = $SP.PublisherName
+        "Publisher" = (&{if ($SP.PublisherName) {$SP.PublisherName} else { $null }})
         "Verified" = (&{if ($SP.verifiedPublisher.verifiedPublisherId) {$SP.verifiedPublisher.displayName} else {"Not verified"}})
-        "Homepage" = $SP.Homepage
+        "Homepage" = (&{if ($SP.Homepage) {$SP.Homepage} else { $null }})
         "SP name" = $SP.displayName
         "ObjectId" = $SP.id
-        "Created on" = (Get-Date($SP.createdDateTime) -format g)
+        "Created on" = (&{if ($SP.createdDateTime) {(Get-Date($SP.createdDateTime) -format g)} else { $null }})
         "Enabled" = $SP.AccountEnabled
         "Last modified" = $null
         "Permissions (application)" = $null
