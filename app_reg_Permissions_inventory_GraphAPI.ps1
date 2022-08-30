@@ -16,8 +16,16 @@ function parse-AppPermissions {
     foreach ($appRoleAssignment in $appRoleAssignments) {
         $resID = (Get-ServicePrincipalRoleById $appRoleAssignment.resourceAppId).appDisplayName
         foreach ($entry in $appRoleAssignment.resourceAccess) {
-            if ($entry.Type -eq "Role") { $OAuthpermA["[" + $resID + "]"] += "," + ($OAuthScopes[$appRoleAssignment.resourceAppId].AppRoles | ? {$_.id -eq $entry.id}).Value }
-            elseif ($entry.Type -eq "Scope") { $OAuthpermD["[" + $resID + "]"] += "," + ($OAuthScopes[$appRoleAssignment.resourceAppId].publishedPermissionScopes | ? {$_.id -eq $entry.id}).Value }
+            if ($entry.Type -eq "Role") {
+                $entryValue = ($OAuthScopes[$appRoleAssignment.resourceAppId].AppRoles | ? {$_.id -eq $entry.id}).Value
+                if (!$entryValue) { $entryValue = "Orphaned ($($entry.id))" }
+                $OAuthpermA["[" + $resID + "]"] += "," + $entryValue
+            }
+            elseif ($entry.Type -eq "Scope") { 
+                $entryValue = ($OAuthScopes[$appRoleAssignment.resourceAppId].publishedPermissionScopes | ? {$_.id -eq $entry.id}).Value
+                if (!$entryValue) { $entryValue = "Orphaned ($($entry.id))" }
+                $OAuthpermD["[" + $resID + "]"] += "," + $entryValue
+            }
             else { continue }
         }
     }
@@ -81,7 +89,7 @@ $body = @{
 try { 
     $res = Invoke-WebRequest -Method Post -Uri $url -Verbose -Body $body
     $token = ($res.Content | ConvertFrom-Json).access_token
-
+    
     $authHeader = @{
        'Authorization'="Bearer $token"
     }}
@@ -91,6 +99,8 @@ catch { Write-Host "Failed to obtain token, aborting..." ; return }
 $Apps = @()
 
 $uri = "https://graph.microsoft.com/beta/applications?`$top=999"
+#once they fix $expand($select)
+#$uri = "https://graph.microsoft.com/v1.0/applications?`$top=999&`$expand=owners($select=userPrincipalName)
 do {
     $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -Verbose:$VerbosePreference
     $uri = ($result.Content | ConvertFrom-Json).'@odata.nextLink'
@@ -122,11 +132,15 @@ foreach ($App in $Apps) {
         "SignInAudience" = $app.signInAudience
         "ObjectId" = $App.id
         "Created on" = (&{if ($app.createdDateTime) {(Get-Date($App.createdDateTime) -format g)} else {"N/A"}})
+        #"Owner" = 
         "Permissions (application)" = $null
         "Permissions (delegate)" = $null
         "Permissions (API)" = $null
+        "Allow Public client flows" = (&{if ($app.isFallbackPublicClient -eq "true") {"True"} else {"False"}}) #probably need to handle 'null' value as well
         "Key credentials" = (&{if ($app.keyCredentials) {parse-Credential $app.keyCredentials} else {""}})
+        "Key credentials expiry date" = (&{if ($app.keyCredentials) {($app.keyCredentials.endDateTime | sort -Descending | select -First 1)} else {""}})
         "Password credentials" = (&{if ($app.passwordCredentials) {parse-Credential $app.passwordCredentials} else {""}})
+        "Password credentials expiry date" = (&{if ($app.passwordCredentials) {($app.passwordCredentials.endDateTime | sort -Descending | select -First 1)} else {""}})
     }
 
     #Process permissions #Add STATUS of consent per each entry?

@@ -1,4 +1,4 @@
-#Requires -Version 3.0
+﻿#Requires -Version 3.0
 #Make sure to fill in all the required variables before running the script
 #Also make sure the AppID used corresponds to an app with sufficient permissions, as follows:
 #    Directory.Read.All (hard-requirement for oauth2PermissionGrants, covers everything else needed)
@@ -16,6 +16,7 @@ function parse-AppPermissions {
     foreach ($appRoleAssignment in $appRoleAssignments) {
         $resID = $appRoleAssignment.ResourceDisplayName
         $roleID = (Get-ServicePrincipalRoleById $appRoleAssignment.resourceId).appRoles | ? {$_.id -eq $appRoleAssignment.appRoleId} | select -ExpandProperty Value
+        if (!$roleID) { $roleID = "Orphaned ($($appRoleAssignment.appRoleId))" }
         $OAuthperm["[" + $resID + "]"] += $("," + $RoleId)
     }
 }
@@ -140,12 +141,12 @@ foreach ($SP in $SPs) {
         "Number" = $i
         "Application Name" = $SP.appDisplayName
         "ApplicationId" = $SP.AppId
-        "Publisher" = (&{if ($SP.PublisherName) {$SP.PublisherName} else { $null }})
+        "Publisher" = $SP.PublisherName
         "Verified" = (&{if ($SP.verifiedPublisher.verifiedPublisherId) {$SP.verifiedPublisher.displayName} else {"Not verified"}})
-        "Homepage" = (&{if ($SP.Homepage) {$SP.Homepage} else { $null }})
+        "Homepage" = $SP.Homepage
         "SP name" = $SP.displayName
         "ObjectId" = $SP.id
-        "Created on" = (&{if ($SP.createdDateTime) {(Get-Date($SP.createdDateTime) -format g)} else { $null }})
+        "Created on" = (Get-Date($SP.createdDateTime) -format g)
         "Enabled" = $SP.AccountEnabled
         "Last modified" = $null
         "Permissions (application)" = $null
