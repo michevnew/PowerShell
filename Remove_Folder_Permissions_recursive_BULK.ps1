@@ -33,11 +33,11 @@ function ReturnFolderList {
     Array with information about the mailbox folders.
 #>
     
-    param([Parameter(Mandatory=$true, ValueFromPipeline=$true)]$SMTPAddress)
+    param([Parameter(Mandatory=$true, ValueFromPipeline=$true)]$SMTPAddress,[Parameter(Mandatory=$false)][String]$ParentFolderPath)
 
     if (!$session -or ($session.State -ne "Opened")) { Write-Error "No active Exchange Remote PowerShell session detected, please connect first. To connect to ExO: https://technet.microsoft.com/en-us/library/jj984289(v=exchg.160).aspx" -ErrorAction Stop }
 
-    $MBfolders = Invoke-Command -Session $session -ScriptBlock { Get-MailboxFolderStatistics $using:SMTPAddress | Select-Object Name,FolderType,Identity } -HideComputerName -ErrorAction Stop
+    $MBfolders = Invoke-Command -Session $session -ScriptBlock { Get-MailboxFolderStatistics $using:SMTPAddress | Select-Object Name,FolderType,Identity,FolderPath } -HideComputerName -ErrorAction Stop
     if($PSBoundParameters.ContainsKey('ParentFolderPath')) {
 		$MBfolders = $MBfolders | ? {($_.FolderType -eq "User created" -or $_.FolderType -in $includedfolders) -and ($_.Name -notin $excludedfolders) -and ($_.FolderPath -match $ParentFolderPath+"*")}
 	}
@@ -192,5 +192,7 @@ function Remove-MailboxFolderPermissionsRecursive {
 }
 
 #Invoke the Remove-MailboxFolderPermissionsRecursive function and pass the command line parameters. Make sure the output is stored in a variable for reuse, even if not specified in the input!
-if ($PSBoundParameters.Count) { Remove-MailboxFolderPermissionsRecursive @PSBoundParameters -OutVariable global:varFolderPermissionsRemoved }
+if ($PSBoundParameters.Count -and $PSBoundParameters.Keys -notmatch "WhatIf|Verbose|ErrorAction|ErrorVariable|Confirm|Debug|WarningAction|WarningVariable|InformationAction|InformationVariable|OutVariable|OutBuffer|PipelineVariable") {
+    Remove-MailboxFolderPermissionsRecursive @PSBoundParameters -OutVariable global:varFolderPermissionsRemoved 
+}
 else { Write-Host "INFO: The script was run without parameters, consider dot-sourcing it instead." -ForegroundColor Cyan }
