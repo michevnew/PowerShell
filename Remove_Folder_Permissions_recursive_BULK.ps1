@@ -1,6 +1,6 @@
 ﻿#Requires -Version 3.0
 [CmdletBinding(SupportsShouldProcess)] #Make sure we can use -WhatIf and -Verbose
-Param([switch]$Quiet,[ValidateNotNullOrEmpty()][Alias("Identity")][String[]]$Mailbox,[ValidateNotNullOrEmpty()][Alias("Delegate")][String[]]$User)
+Param([switch]$Quiet,[ValidateNotNullOrEmpty()][Alias("Identity")][String[]]$Mailbox,[ValidateNotNullOrEmpty()][Alias("Delegate")][String[]]$User,[Parameter(Mandatory=$false)][String]$ParentFolderPath)
 
 #Include these folder types by default
 $includedfolders = @("Root","Inbox","Calendar", "Contacts", "DeletedItems", "Drafts", "JunkEmail", "Journal", "Notes", "Outbox", "SentItems", "Tasks", "CommunicatorHistory", "Clutter", "Archive")
@@ -19,22 +19,31 @@ function ReturnFolderList {
     Enumerates all user-accessible folders for the mailbox
 .DESCRIPTION
     The ReturnFolderList cmdlet enumerates the folders for the given mailbox. To adjust the list of folders, add to the $includedfolders or $excludedfolders array, respectively.
+.PARAMETER SMTPAddress
+	Use the -SMTPAddress parameter to designate the mailbox where the desired folders reside
+.PARAMETER ParentFolderPath
+	Use the -ParentFolderPath to designate a starting point for listing folders. For instance, use "/Inbox/From Accounting/" to get all subfolders of the 'From Accounting folder in your Inbox.
 .EXAMPLE
     ReturnFolderList user@domain.com
 
     This command will return a list of all user-accessible folders for the user@domain.com mailbox.
 .INPUTS
-    SMTP address of the mailbox.
+    SMTP address of the mailbox, with optional parent folder (full path).
 .OUTPUTS
     Array with information about the mailbox folders.
 #>
     
-    param([Parameter(Mandatory=$true, ValueFromPipeline=$true)]$SMTPAddress)
+    param([Parameter(Mandatory=$true, ValueFromPipeline=$true)]$SMTPAddress,[Parameter(Mandatory=$false)][String]$ParentFolderPath)
 
     if (!$session -or ($session.State -ne "Opened")) { Write-Error "No active Exchange Remote PowerShell session detected, please connect first. To connect to ExO: https://technet.microsoft.com/en-us/library/jj984289(v=exchg.160).aspx" -ErrorAction Stop }
 
-    $MBfolders = Invoke-Command -Session $session -ScriptBlock { Get-MailboxFolderStatistics $using:SMTPAddress | Select-Object Name,FolderType,Identity } -HideComputerName -ErrorAction Stop
-    $MBfolders = $MBfolders | ? {($_.FolderType -eq "User created" -or $_.FolderType -in $includedfolders) -and ($_.Name -notin $excludedfolders)}
+    $MBfolders = Invoke-Command -Session $session -ScriptBlock { Get-MailboxFolderStatistics $using:SMTPAddress | Select-Object Name,FolderType,Identity,FolderPath } -HideComputerName -ErrorAction Stop
+    if($PSBoundParameters.ContainsKey('ParentFolderPath')) {
+		$MBfolders = $MBfolders | ? {($_.FolderType -eq "User created" -or $_.FolderType -in $includedfolders) -and ($_.Name -notin $excludedfolders) -and ($_.FolderPath -match $ParentFolderPath+"*")}
+	}
+	else {
+		$MBfolders = $MBfolders | ? {($_.FolderType -eq "User created" -or $_.FolderType -in $includedfolders) -and ($_.Name -notin $excludedfolders)}
+	}
 
     if (!$MBfolders) { return }
     else { return ($MBfolders | select Name,FolderType,Identity) }
@@ -51,6 +60,8 @@ function Remove-MailboxFolderPermissionsRecursive {
     Use the -Mailbox parameter to designate the mailbox. Any valid Exchange mailbox identifier can be specified. Multiple mailboxes can be specified in a comma-separated list or array, see examples below.
 .PARAMETER User
     Use the -User parameter to designate the delegate. Any valid Exchange security principal identifier can be specified. Multiple delegates can be specified in a comma-separated list or array, see examples below.
+.PARAMETER ParentFolderPath
+	Use the -ParentFolderPath to designate a starting point for listing folders. For instance, use "/Inbox/From Accounting/" to get all subfolders of the 'From Accounting folder in your Inbox.
 .PARAMETER Quiet
     Use the -Quiet switch if you want to suppress output to the console.
 .PARAMETER WhatIf
@@ -80,6 +91,7 @@ function Remove-MailboxFolderPermissionsRecursive {
     Param(
     [Parameter(Mandatory=$true,ValueFromPipeline=$false)][ValidateNotNullOrEmpty()][Alias("Identity")][String[]]$Mailbox,
     [Parameter(Mandatory=$true,ValueFromPipeline=$false)][ValidateNotNullOrEmpty()][Alias("Delegate")][String[]]$User,
+	[Parameter(Mandatory=$false)]$ParentFolderPath,
     [switch]$Quiet)
 
 
@@ -130,7 +142,8 @@ function Remove-MailboxFolderPermissionsRecursive {
         Write-Verbose "Processing mailbox ""$smtp""..."
         Start-Sleep -Milliseconds 800 #Add some delay to avoid throttling...
         Write-Verbose "Obtaining folder list for mailbox ""$smtp""..."
-        $folders = ReturnFolderList $smtp
+        if($PSBoundParameters.ContainsKey('ParentFolderPath')) {$folders = ReturnFolderList $smtp $ParentFolderPath}
+		else { $folders = ReturnFolderList $smtp }
         Write-Verbose "A total of $($folders.count) folders found for $($smtp)."
 
         if (!$folders) { Write-Verbose "No matching folders found for $($smtp), skipping..." ; continue }
@@ -179,5 +192,7 @@ function Remove-MailboxFolderPermissionsRecursive {
 }
 
 #Invoke the Remove-MailboxFolderPermissionsRecursive function and pass the command line parameters. Make sure the output is stored in a variable for reuse, even if not specified in the input!
-if ($PSBoundParameters.Count) { Remove-MailboxFolderPermissionsRecursive @PSBoundParameters -OutVariable global:varFolderPermissionsRemoved }
+if ($PSBoundParameters.Count -and $PSBoundParameters.Keys -notmatch "WhatIf|Verbose|ErrorAction|ErrorVariable|Confirm|Debug|WarningAction|WarningVariable|InformationAction|InformationVariable|OutVariable|OutBuffer|PipelineVariable") {
+    Remove-MailboxFolderPermissionsRecursive @PSBoundParameters -OutVariable global:varFolderPermissionsRemoved 
+}
 else { Write-Host "INFO: The script was run without parameters, consider dot-sourcing it instead." -ForegroundColor Cyan }
