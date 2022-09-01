@@ -213,7 +213,7 @@ function Set-MailboxFolderPermissionsRecursive {
 }
 
 #Invoke the Set-MailboxFolderPermissionsRecursive function and pass the command line parameters. Make sure the output is stored in a variable for reuse, even if not specified in the input!
-if ($PSBoundParameters.Count) { Set-MailboxFolderPermissionsRecursive @PSBoundParameters -OutVariable global:varFolderPermissionsAdded }
+if ($PSBoundParameters.Count -and $PSBoundParameters.Keys -notmatch "WhatIf|Verbose|ErrorAction|ErrorVariable|Confirm|Debug|WarningAction|WarningVariable|InformationAction|InformationVariable|OutVariable|OutBuffer|PipelineVariable") {
+	Set-MailboxFolderPermissionsRecursive @PSBoundParameters -OutVariable global:varFolderPermissionsAdded 
+}
 else { Write-Host "INFO: The script was run without parameters, consider dot-sourcing it instead." -ForegroundColor Cyan }
-
-#Invoke-Command -Session $session -ScriptBlock { Remove-MailboxFolderPermission -Identity $Using:foldername -User $Using:u.Value -Confirm:$false }
