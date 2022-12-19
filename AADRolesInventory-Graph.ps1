@@ -66,7 +66,8 @@ foreach ($role in $roles) { Add-Member -InputObject $role -MemberType NoteProper
 #process PIM eligible role assignments
 if ($IncludePIMEligibleAssignments) {
     Write-Verbose "Collecting PIM eligible role assignments..."
-    $uri = 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleEligibilitySchedules?$select=id,principalId,directoryScopeId,roleDefinitionId,status&$expand=*'
+    #$uri = 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleEligibilitySchedules?$select=id,principalId,directoryScopeId,roleDefinitionId,status&$expand=*' #$expand=* is BROKEN in /v1.0
+    $uri = 'https://graph.microsoft.com/beta/roleManagement/directory/roleEligibilitySchedules?$select=id,principalId,directoryScopeId,roleDefinitionId,status&$expand=*'
 
     do {
         $result = Invoke-WebRequest -Uri $uri -Verbose:$VerbosePreference -ErrorAction Stop -Headers $authHeader
