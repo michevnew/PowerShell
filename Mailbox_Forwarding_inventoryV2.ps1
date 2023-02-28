@@ -177,22 +177,25 @@ function Get-MailboxForwardingInventory {
 
     #Output the result to the console host and CSV
     if ($arrForwarding) {
-        #if we got the Accepted Domains data, try to determine if any forwarding addresses are internal/external
-        if ($CheckTenantControls) {
-            $arrForwarding | % {
-                if ($_.'Forwarding to') { #parse the forwarding addresses, try to find a matching internal recipient and against the list of accepted domains
-                    foreach ($entry in $_.'Forwarding to') {
-                        $rec = $null
-                        Start-Sleep -Milliseconds 100
-                        if ($entry -match "EX:/") { $entry = $entry.Split("[")[1].Replace("]","").Replace("EX:","") } #fix for Inbox rules
-                        if ($rec = Get-EXORecipient $entry -ErrorAction SilentlyContinue) { $entry = $rec.PrimarySmtpAddress.Split("@")[1] } #check if matching recipient is found internally
-                        if ($entry -notmatch ($varAcceptedDomains -join "|")) { Add-Member -InputObject $_ -MemberType NoteProperty -Name "IsExternal" -Value "True"; continue }
+        $arrForwarding | % {
+            if ($_.'Forwarding to') { #parse the forwarding addresses, try to find a matching internal recipient and against the list of accepted domains
+                if ($CheckTenantControls) { #if we got the Accepted Domains data, try to determine if any forwarding addresses are internal/external
+                        foreach ($entry in $_.'Forwarding to') {
+                            $rec = $null
+                            Start-Sleep -Milliseconds 100
+                            if ($entry -match "EX:/") { $entry = $entry.Split("[")[1].Replace("]","").Replace("EX:","") } #fix for Inbox rules
+                            if ($rec = Get-EXORecipient $entry -ErrorAction SilentlyContinue) { $entry = $rec.PrimarySmtpAddress.Split("@")[1] } #check if matching recipient is found internally
+                            if ($entry -notmatch ($varAcceptedDomains -join "|")) { Add-Member -InputObject $_ -MemberType NoteProperty -Name "IsExternal" -Value $true; continue }
+                        }
+                        if (!$_.IsExternal) { Add-Member -InputObject $_ -MemberType NoteProperty -Name "IsExternal" -Value $false }
                     }
-                    if (!$_.IsExternal) { Add-Member -InputObject $_ -MemberType NoteProperty -Name "IsExternal" -Value "False" }
-                }
-                else { Add-Member -InputObject $_ -MemberType NoteProperty -Name "IsExternal" -Value "N/A" }
-            }}
-        else { $arrForwarding | % { Add-Member -InputObject $_ -MemberType NoteProperty -Name "IsExternal" -Value "N/A" }}
+                else { Add-Member -InputObject $_ -MemberType NoteProperty -Name "IsExternal" -Value "N/A" } #else we don't know if external/internal
+                $_.'Forwarding to' = ($_.'Forwarding to' -join ",") #fix for multiple values
+            }
+            #else { Add-Member -InputObject $_ -MemberType NoteProperty -Name "IsExternal" -Value "N/A" }
+        }  
+        #else { $arrForwarding | % { Add-Member -InputObject $_ -MemberType NoteProperty -Name "IsExternal" -Value "N/A" }}
+
         Write-Verbose "Processing finished, outputing results ..."
         $arrForwarding | select 'Mailbox address','Mailbox type','Keep original message','Forwarding via','Forwarding to',IsExternal
         $arrForwarding | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_MailboxForwarding.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
