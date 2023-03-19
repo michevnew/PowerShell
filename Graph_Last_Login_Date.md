@@ -14,4 +14,4 @@ If a token is successfuly obtained, the script will query the /beta/users Graph 
 
 If you want to export the result to CSV file, uncomment the last line.
 
-More info can be found here: https://www.michev.info/Blog/Post/2968/reporting-on-users-last-logged-in-date-in-office-365
+More info can be found here: https://www.michev.info/blog/post/2968/reporting-on-users-last-logged-in-date-in-office-365
