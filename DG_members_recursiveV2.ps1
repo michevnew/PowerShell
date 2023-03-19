@@ -3,7 +3,7 @@
 [CmdletBinding()] #Make sure we can use -Verbose
 Param([switch]$IncludeAll,[switch]$IncludeDGs,[switch]$IncludeDynamicDGs,[switch]$IncludeO365Groups,[switch]$RecursiveOutput,[switch]$RecursiveOutputListGroups,[string[]]$GroupList)
 
-#For details on what the script does and how to run it, check: https://www.michev.info/Blog/Post/4394
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/4394/report-on-recursive-group-membership-via-exchange-powershell
 
 function Check-Connectivity {
     #Make sure we are connected to Exchange Online PowerShell

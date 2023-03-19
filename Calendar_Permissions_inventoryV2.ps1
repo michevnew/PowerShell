@@ -1,6 +1,6 @@
 ﻿param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes)
 
-#For details on what the script does and how to run it, check: https://www.michev.info/Blog/Post/4007/
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/4007/updated-version-of-the-calendar-permissions-inventory-script
 
 function Get-CalendarPermissionInventory {
 <#
@@ -68,7 +68,7 @@ function Get-CalendarPermissionInventory {
     }
     
     #If no mailboxes are returned from the above cmdlet, stop the script and inform the user
-    if (!$MBList) { Write-Error "No mailboxes of the specifyied types were found, specify different criteria." -ErrorAction Stop }
+    if (!$MBList) { Write-Error "No mailboxes of the specified types were found, specify different criteria." -ErrorAction Stop }
 
     #Once we have the mailbox list, cycle over each mailbox to gather Calendar permissions inventory
     $arrPermissions = @()
@@ -77,7 +77,7 @@ function Get-CalendarPermissionInventory {
         
         #Progress message
         $ActivityMessage = "Retrieving data for mailbox $($MB.Identity). Please wait..."
-        $StatusMessage = ("Processing {0} of {1}: {2}" -f $count, @($MBList).count, $MB.PrimarySmtpAddress.ToString())
+        $StatusMessage = ("Processing mailbox {0} of {1}: {2}" -f $count, @($MBList).count, $MB.PrimarySmtpAddress.ToString())
         $PercentComplete = ($count / @($MBList).count * 100)
         Write-Progress -Activity $ActivityMessage -Status $StatusMessage -PercentComplete $PercentComplete
         $count++

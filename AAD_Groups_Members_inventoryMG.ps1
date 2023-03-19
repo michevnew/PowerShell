@@ -5,7 +5,7 @@
 [CmdletBinding()] #Make sure we can use -Verbose
 param([string[]]$GroupList,[switch]$TransitiveMembership=$false)
 
-#For details on what the script does and how to run it, check: https://www.michev.info/Blog/Post/4357/
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/4357/report-on-azure-ad-group-members-via-the-graph-api
 
 #region Authentication
 try { Connect-MgGraph -Scopes Directory.Read.All | Out-Null }

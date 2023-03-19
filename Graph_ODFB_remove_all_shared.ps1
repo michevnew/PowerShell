@@ -4,7 +4,7 @@
 #    User.Read.All to enumerate all users in the tenant
 #    Sites.ReadWrite.All to return all the item sharing details
 # Help file: https://github.com/michevnew/PowerShell/blob/master/Graph_ODFB_remove_all_shared.md
-# More info at: https://www.michev.info/Blog/Post/3018/remove-sharing-permissions-on-all-files-in-users-onedrive-for-business
+# More info at: https://www.michev.info/blog/post/3018/remove-sharing-permissions-on-all-files-in-users-onedrive-for-business
 
 [CmdletBinding()] #Make sure we can use -Verbose
 Param([switch]$ExpandFolders=$true,[int]$Depth=2,[string]$User)

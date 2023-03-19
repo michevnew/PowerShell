@@ -3,7 +3,7 @@
 #Also make sure the AppID used corresponds to an app with sufficient permissions, as follows:
 #    Directory.Read.All
 
-#For details on what the script does and how to run it, check: https://www.michev.info/Blog/Post/4228/
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/4228/reporting-on-users-administrative-unit-membership-in-azure-ad
 
 param([string[]]$UserList)
 

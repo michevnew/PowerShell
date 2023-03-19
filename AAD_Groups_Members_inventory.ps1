@@ -3,7 +3,7 @@
 #Also make sure the AppID used corresponds to an app with sufficient permissions, as follows:
 #    Directory.Read.All
 
-#For details on what the script does and how to run it, check: https://www.michev.info/Blog/Post/4357/
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/4357/report-on-azure-ad-group-members-via-the-graph-api
 
 param([string[]]$GroupList,[switch]$TransitiveMembership=$false)
 [CmdletBinding()] #Make sure we can use -Verbose

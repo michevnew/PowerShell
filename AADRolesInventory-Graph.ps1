@@ -2,7 +2,7 @@
 [CmdletBinding(SupportsShouldProcess)] #Make sure we can use -WhatIf and -Verbose
 Param([switch]$IncludePIMEligibleAssignments) #Indicate whether to include PIM elibigle role assignments in the output. NOTE: Currently the RoleManagement.Read.Directory application permissions seems to be required!
 
-#For details on what the script does and how to run it, check: https://www.michev.info/Blog/Post/3958/
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/3958/generate-a-report-of-azure-ad-role-assignments-via-the-graph-api-or-powershell
 
 #region Authentication
 #We use the client credentials flow as an example. For production use, REPLACE the code below wiht your preferred auth method. NEVER STORE CREDENTIALS IN PLAIN TEXT!!!
@@ -66,8 +66,7 @@ foreach ($role in $roles) { Add-Member -InputObject $role -MemberType NoteProper
 #process PIM eligible role assignments
 if ($IncludePIMEligibleAssignments) {
     Write-Verbose "Collecting PIM eligible role assignments..."
-    #$uri = 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleEligibilitySchedules?$select=id,principalId,directoryScopeId,roleDefinitionId,status&$expand=*' #$expand=* is BROKEN in /v1.0
-    $uri = 'https://graph.microsoft.com/beta/roleManagement/directory/roleEligibilitySchedules?$select=id,principalId,directoryScopeId,roleDefinitionId,status&$expand=*'
+    $uri = 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleEligibilitySchedules?$select=id,principalId,directoryScopeId,roleDefinitionId,status&$expand=*'
 
     do {
         $result = Invoke-WebRequest -Uri $uri -Verbose:$VerbosePreference -ErrorAction Stop -Headers $authHeader
@@ -106,4 +105,4 @@ foreach ($role in $roles) {
 #endregion Output
 
 #format and export
-$report | sort DisplayName | Export-CSV -nti -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_AzureADRoleInventory.csv"
+$report | sort PrincipalDisplayName | Export-CSV -nti -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_AzureADRoleInventory.csv"

@@ -2,7 +2,7 @@
 [CmdletBinding(SupportsShouldProcess)] #Make sure we can use -WhatIf and -Verbose
 Param([switch]$IncludePIMEligibleAssignments) #Indicate whether to include PIM elibigle role assignments in the output. NOTE: Currently the RoleManagement.Read.Directory scope seems to be required!
 
-#For details on what the script does and how to run it, check: https://www.michev.info/Blog/Post/3958/
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/3958/generate-a-report-of-azure-ad-role-assignments-via-the-graph-api-or-powershell
 
 #region Authentication
 try { Connect-MgGraph -Scopes RoleManagement.Read.Directory,Directory.Read.All} #RoleManagement.Read.Directory needed for PIM eligible assignments, Directory.Read.All for roles and "translating" GUIDs
@@ -54,4 +54,4 @@ foreach ($role in $roles) {
 #endregion Output
 
 #format and export
-$report | sort DisplayName | Export-CSV -nti -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_AzureADRoleInventory.csv"
+$report | sort PrincipalDisplayName #| Export-CSV -nti -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_AzureADRoleInventory.csv"

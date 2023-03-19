@@ -2,7 +2,7 @@
 #Requires -Modules @{ ModuleName="Microsoft.Graph.Users"; ModuleVersion="1.19.0" }
 #Requires -Modules @{ ModuleName="Microsoft.Graph.Identity.DirectoryManagement"; ModuleVersion="1.19.0" }
 
-#For details on what the script does and how to run it, check: https://www.michev.info/Blog/Post/3555
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/3555/bulk-enable-specific-services-via-the-graph-api
 
 [CmdletBinding()] #Make sure we can use -Verbose
 param([string[]]$UserList)

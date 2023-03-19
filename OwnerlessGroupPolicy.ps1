@@ -1,5 +1,6 @@
 ﻿######################################################################################################## 
-# For details on what the script does and how to run it, check: https://www.michev.info/Blog/Post/4148 #
+#    For details on what the script does and how to run it, check:                                     #
+#    https://www.michev.info/blog/post/4148/ownerless-group-policy-cmdlets-replacement                 #
 ########################################################################################################
 
 #Simple function to get an access token via the MSAL library. Replace with your preferred method!

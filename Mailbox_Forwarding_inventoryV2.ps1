@@ -3,7 +3,7 @@
 [CmdletBinding()]
 param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$CheckInboxRules,[switch]$CheckCalendarDelegates,[switch]$CheckTransportRules,[switch]$CheckTenantControls)
 
-#For details on what the script does and how to run it, check: https://www.michev.info/Blog/Post/4466/
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/4466/report-on-microsoft-365-mailbox-forwarding-all-methods-via-powershell
 
 function Get-MailboxForwardingInventory {
 <#
@@ -192,9 +192,8 @@ function Get-MailboxForwardingInventory {
                 else { Add-Member -InputObject $_ -MemberType NoteProperty -Name "IsExternal" -Value "N/A" } #else we don't know if external/internal
                 $_.'Forwarding to' = ($_.'Forwarding to' -join ",") #fix for multiple values
             }
-            #else { Add-Member -InputObject $_ -MemberType NoteProperty -Name "IsExternal" -Value "N/A" }
-        }  
-        #else { $arrForwarding | % { Add-Member -InputObject $_ -MemberType NoteProperty -Name "IsExternal" -Value "N/A" }}
+            else { Add-Member -InputObject $_ -MemberType NoteProperty -Name "IsExternal" -Value "N/A" }
+        }
 
         Write-Verbose "Processing finished, outputing results ..."
         $arrForwarding | select 'Mailbox address','Mailbox type','Keep original message','Forwarding via','Forwarding to',IsExternal

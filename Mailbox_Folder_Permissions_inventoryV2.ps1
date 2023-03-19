@@ -1,7 +1,7 @@
 ﻿#Requires -Version 3.0
 param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$IncludeDefaultPermissions,[string[]]$ExcludeUsers)
 
-#For details on what the script does and how to run it, check: https://www.michev.info/Blog/Post/4095/
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/4095/updated-version-of-the-mailbox-folder-permissions-inventory-script
 
 function Get-MailboxFolderPermissionInventory {
 <#

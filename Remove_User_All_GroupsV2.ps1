@@ -6,7 +6,7 @@
 [CmdletBinding(SupportsShouldProcess)] #Make sure we can use -WhatIf and -Verbose
 Param([ValidateNotNullOrEmpty()][Alias("UserToRemove")][String[]]$Identity,[switch]$IncludeAADSecurityGroups,[switch]$IncludeOffice365Groups,[switch]$Quiet)
 
-#For details on what the script does and how to run it, check: https://www.michev.info/Blog/Post/4409
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/4409/remove-user-from-all-microsoft-365-groups-updated-2023-version-of-the-script
 
 #Add switch to handle situations where the user is the only owner of a Group?
 #Handle privileged AAD groups
