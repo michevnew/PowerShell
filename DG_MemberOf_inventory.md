@@ -20,6 +20,6 @@ The above example will generate a report for the group membership of all Guest U
 .\DG_MemberOf_inventory.ps1 -IncludeAll
 ```
 
-The script will save the report to a CSV file in the working directory and will also store it in a global variable ($varDGMemberOf) for reuse. Additional information about the script can be found in [this article](https://www.michev.info/Blog/Post/2250/generating-a-report-of-users-group-membership-memberof-inventory). 
+The script will save the report to a CSV file in the working directory and will also store it in a global variable ($varDGMemberOf) for reuse. Additional information about the script can be found in [this article](https://www.michev.info/blog/post/2250/generating-a-report-of-users-group-membership-memberof-inventory). 
 
 Questions and feedback are welcome.
