@@ -19,6 +19,6 @@ $var | Export-Csv -NoTypeInformation "MailboxForwarding.csv"
 ```
 Alternatively, remove the comment mark in the last line of the script. 
  
-Additional information about the script can be found at: [https://www.cogmotive.com/blog/powershell-scripts/office-365-permissions-inventory-mailbox-forwarding](https://www.michev.info/Blog/Post/4438/mailbox-forwarding-inventory-report)
+Additional information about the script can be found at: [https://www.michev.info/Blog/Post/4438/mailbox-forwarding-inventory-report](https://www.michev.info/Blog/Post/4438/mailbox-forwarding-inventory-report)
 
 Questions and feedback are welcome.
