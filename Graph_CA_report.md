@@ -14,4 +14,4 @@ Two small helper functions are added to convert GUIDs to UPN (for user objects) 
 
 Output is also written to a CSV file in the script directory.
 
-More info about the script can be found here: https://www.michev.info/Blog/Post/3004/reporting-on-conditional-access-policies-in-microsoft-365
+More info about the script can be found here: https://www.michev.info/blog/post/3004/reporting-on-conditional-access-policies-in-microsoft-365
