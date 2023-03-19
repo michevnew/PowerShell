@@ -11,6 +11,6 @@ After creating the application and granting the permissions, copy the key/secret
 
 By default, the script will store the output in a global variable called $varTeamChannels in case you want to reuse it, and will return the output to the console. The unfiltered output will be saved to a CSV file, which you can then format, sort and filter as needed.
 
-Additional information about the script can be found in [this article](https://www.michev.info/Blog/Post/2676/reporting-on-any-email-addresses-configured-for-teams-and-channels-via-the-graph-api).
+Additional information about the script can be found in [this article](https://www.michev.info/blog/post/2676/reporting-on-any-email-addresses-configured-for-teams-and-channels-via-the-graph-api).
 
 Questions and feedback are welcome.
