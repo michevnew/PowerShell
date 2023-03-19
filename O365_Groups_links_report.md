@@ -19,6 +19,6 @@ The default output is one line per each Link entry, which generates a CSV file e
 ```PowerShell
 .\O365_Groups_links_report.ps1 -CondensedOutput
 ```
-Additional information about the script can be found in [this article](https://www.michev.info/Blog/Post/2101/reporting-on-membership-of-office-365-groups).
+Additional information about the script can be found in [this article](https://www.michev.info/blog/post/2101/reporting-on-membership-of-office-365-groups).
 
 Questions and feedback are welcome.
