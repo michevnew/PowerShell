@@ -25,6 +25,6 @@ The script has two optional parameters you can use. The -ExpandFolders switch in
 
 By default, the script will return a filtered list of just the items that have been shared, and will also store the output in a global variable called $varODFBSharedItems in case you want to reuse it. if you want to save it to CSV, uncomment line 192
 
-Additional information about the script can be found at: https://www.michev.info/Blog/Post/3018/remove-sharing-permissions-on-all-files-in-users-onedrive-for-business
+Additional information about the script can be found at: https://www.michev.info/blog/post/3018/remove-sharing-permissions-on-all-files-in-users-onedrive-for-business
 
 Questions and feedback are welcome.
