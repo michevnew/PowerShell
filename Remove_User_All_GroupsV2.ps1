@@ -40,7 +40,7 @@ function Check-Connectivity {
     #Double-check and try to eastablish a session
     try { Get-EXORecipient -ResultSize 1 -ErrorAction Stop | Out-Null }
     catch {
-        try { Connect-ExchangeOnline -CommandName Get-EXORecipient, Remove-DistributionGroupMember, Remove-UnifiedGroupLinks -SkipLoadingFormatData } #custom for this script
+        try { Connect-ExchangeOnline -CommandName Get-EXORecipient, Get-User, Remove-DistributionGroupMember, Remove-UnifiedGroupLinks -SkipLoadingFormatData } #custom for this script
         catch { Write-Error "No active Exchange Online session detected. To connect to ExO: https://docs.microsoft.com/en-us/powershell/exchange/connect-to-exchange-online-powershell?view=exchange-ps"; return $false }
     }
 
@@ -121,7 +121,7 @@ This parameter accepts the following values:
         foreach ($us in $Identity) {
             Start-Sleep -Milliseconds 80 #Add some delay to avoid throttling...
             #Make sure a matching user object is found and return its DN. While we can handle other object type easily on Exchange side, on AAD side we need additional cmdlets, checks, etc...
-            $GUID = Get-EXORecipient $us -RecipientType UserMailbox,MailUser | Select-Object DistinguishedName,ExternalDirectoryObjectId #silence these errors or?
+            $GUID = Get-User $us -RecipientType UserMailbox,MailUser,User | Select-Object DistinguishedName,ExternalDirectoryObjectId #silence these errors or?
             if (!$GUID) { Write-Verbose "Security principal with identifier $us not found, skipping..."; continue }
             elseif (($GUID.count -gt 1) -or ($GUIDs[$us]) -or ($GUIDs.ContainsValue($GUID))) { Write-Verbose "Multiple users matching the identifier $us found, skipping..."; continue }
             else { $GUIDs[$us] = $GUID | Select-Object DistinguishedName,ExternalDirectoryObjectId }
