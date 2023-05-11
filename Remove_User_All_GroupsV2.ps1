@@ -121,7 +121,7 @@ This parameter accepts the following values:
         foreach ($us in $Identity) {
             Start-Sleep -Milliseconds 80 #Add some delay to avoid throttling...
             #Make sure a matching user object is found and return its DN. While we can handle other object type easily on Exchange side, on AAD side we need additional cmdlets, checks, etc...
-            $GUID = Get-User $us -RecipientType UserMailbox,MailUser,User | Select-Object DistinguishedName,ExternalDirectoryObjectId #silence these errors or?
+            $GUID = Get-User $us -Filter {RecipientType -eq 'User' -or RecipientType -eq 'UserMailbox' -or RecipientType -eq 'MailUser'} | Select-Object DistinguishedName,ExternalDirectoryObjectId #silence these errors or?
             if (!$GUID) { Write-Verbose "Security principal with identifier $us not found, skipping..."; continue }
             elseif (($GUID.count -gt 1) -or ($GUIDs[$us]) -or ($GUIDs.ContainsValue($GUID))) { Write-Verbose "Multiple users matching the identifier $us found, skipping..."; continue }
             else { $GUIDs[$us] = $GUID | Select-Object DistinguishedName,ExternalDirectoryObjectId }
