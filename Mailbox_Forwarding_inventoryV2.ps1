@@ -1,7 +1,6 @@
 ﻿#Requires -Version 3.0
 #Requires -Modules @{ ModuleName="ExchangeOnlineManagement"; ModuleVersion="3.0.0" }
-[CmdletBinding()]
-param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$CheckInboxRules,[switch]$CheckCalendarDelegates,[switch]$CheckTransportRules,[switch]$CheckTenantControls)
+[CmdletBinding()]param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$CheckInboxRules,[switch]$CheckCalendarDelegates,[switch]$CheckTransportRules,[switch]$CheckTenantControls)
 
 #For details on what the script does and how to run it, check: https://www.michev.info/blog/post/4466/report-on-microsoft-365-mailbox-forwarding-all-methods-via-powershell
 
