@@ -6,6 +6,6 @@ To get the list of synchronized users, the script invokes the Get-AzureADUser cm
 
 By default, output will be written to a CSV file in the current directory. If you want to use the output directly in the PowerShell console or modify it before exporting, edit the last line of the script.
 
-Additional information about the script can be found at: [https://www.quadrotech-it.com/blog/reporting-organizational-unit-information-azure-ad-powershell/](https://www.michev.info/blog/post/3344/reporting-on-ou-information-via-azure-ad-powershell)https://www.michev.info/blog/post/3344/reporting-on-ou-information-via-azure-ad-powershell
+Additional information about the script can be found at: https://www.michev.info/blog/post/3344/reporting-on-ou-information-via-azure-ad-powershell
 
 Questions and feedback are welcome.
