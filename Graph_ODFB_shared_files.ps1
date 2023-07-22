@@ -1,4 +1,4 @@
-﻿#Requires -Version 3.0
+#Requires -Version 3.0
 # Make sure to fill in all the required variables before running the script
 # Also make sure the AppID used corresponds to an app with sufficient permissions, as follows:
 #    User.Read.All to enumerate all users in the tenant
@@ -199,7 +199,7 @@ function Renew-Token {
     }
 
     try { 
-        Set-Variable -Name authenticationResult -Scope Global -Value (Invoke-WebRequest -Method Post -Uri $url -Debug -Verbose -Body $body)
+        Set-Variable -Name authenticationResult -Scope Global -Value (Invoke-WebRequest -Method Post -Uri $url -Debug -Verbose -Body $body -ErrorAction Stop)
         $token = ($authenticationResult.Content | ConvertFrom-Json).access_token
     }
     catch { $_; return }
@@ -271,7 +271,7 @@ if ($ExpandFolders -and ($depth -le 0)) { $depth = 0 }
 
 #Get a list of all users, make sure to handle multiple pages
 $GraphUsers = @()
-$uri = "https://graph.microsoft.com/v1.0/users/?$`select=displayName,mail,userPrincipalName,id,userType&`$top=999&`$filter=userType eq 'Member'"
+$uri = "https://graph.microsoft.com/v1.0/users/?`$select=displayName,mail,userPrincipalName,id,userType&`$top=999&`$filter=userType eq 'Member'"
 do {
     $result = Invoke-GraphApiRequest -Uri $uri -Verbose:$VerbosePreference -ErrorAction Stop
     $uri = $result.'@odata.nextLink'

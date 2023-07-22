@@ -1,4 +1,4 @@
-﻿#Set the authentication details
+#Set the authentication details
 $tenantID = "tenant.onmicrosoft.com" #your tenantID or tenant root domain
 $appID = "12345678-1234-1234-1234-1234567890AB" #the GUID of your app. For best result, use app with Directory.Read.All scope granted
 $client_secret = "XXXXXXXXXXXXXXXXXXX" #client secret for the app

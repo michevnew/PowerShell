@@ -1,4 +1,4 @@
-﻿#Load the MSAL binaries
+#Load the MSAL binaries
 Add-Type -LiteralPath "C:\Program Files\PackageManagement\NuGet\Packages\Microsoft.IdentityModel.Abstractions.6.22.0\lib\net45\Microsoft.IdentityModel.Abstractions.dll"
 Add-Type -LiteralPath "C:\Program Files\PackageManagement\NuGet\Packages\Microsoft.Identity.Client.4.54.1\lib\net45\Microsoft.Identity.Client.dll"
 

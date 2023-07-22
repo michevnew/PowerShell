@@ -1,4 +1,4 @@
-﻿param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeMailUsers,[switch]$IncludeMailContacts,[switch]$IncludeGuestUsers)
+param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeMailUsers,[switch]$IncludeMailContacts,[switch]$IncludeGuestUsers)
 
 function Check-Connectivity {
     #Make sure we are connected to Exchange Remote PowerShell

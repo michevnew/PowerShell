@@ -1,4 +1,4 @@
-﻿#Do a check for the AzureAD module
+#Do a check for the AzureAD module
 if (!(Get-Module AzureAD -ListAvailable)) { Write-Host -BackgroundColor Red "This script requires a recent version of the AzureAD PowerShell module. Download it here: https://www.powershellgallery.com/packages/AzureAD/"; return }
 
 #Do a connectivity check
@@ -31,4 +31,4 @@ foreach ($AADRole in $AADRoles) {
 
 #format and export
 $report = foreach ($key in ($RolesHash.Keys)) { $RolesHash[$key] | % { [PSCustomObject]$_ } }
-$report | sort DisplayName #| Export-CSV -nti -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_AzureADRoleInventory.csv"
+$report | sort DisplayName | Export-CSV -nti -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_AzureADRoleInventory.csv"

@@ -1,4 +1,4 @@
-﻿param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$IncludeGroupMailboxes,[switch]$IncludeDGs)
+param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$IncludeGroupMailboxes,[switch]$IncludeDGs)
 
 #For details on what the script does and how to run it, check: https://www.michev.info/blog/post/5576/script-send-on-behalf-of-permissions-microsoft-365
 

@@ -1,4 +1,4 @@
-﻿#Requires -Version 3.0
+#Requires -Version 3.0
 #Requires -Modules @{ ModuleName="ExchangeOnlineManagement"; ModuleVersion="3.0.0" }
 #For details on what the script does and how to run it, check: https://www.michev.info/blog/post/5711/report-on-all-microsoft-365-email-addresses
 param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$IncludeGroupMailboxes,[switch]$IncludeDGs,[switch]$IncludeMailUsers,[switch]$IncludeMailContacts,[switch]$CondensedOutput,[switch]$IncludeSIPAliases,[switch]$IncludeSPOAliases)

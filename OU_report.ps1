@@ -1,4 +1,4 @@
-﻿if (!(Get-Module AzureAD -ListAvailable | ? {($_.Version.Major -eq 2 -and $_.Version.Build -eq 0 -and $_.Version.Revision -ge 55) -or ($_.Version.Major -eq 2 -and $_.Version.Build -ge 1)})) { Write-Host -BackgroundColor Red "This script requires a recent version of the AzureAD PowerShell module. Download it here: https://www.powershellgallery.com/packages/AzureAD/"; return}
+if (!(Get-Module AzureAD -ListAvailable | ? {($_.Version.Major -eq 2 -and $_.Version.Build -eq 0 -and $_.Version.Revision -ge 55) -or ($_.Version.Major -eq 2 -and $_.Version.Build -ge 1)})) { Write-Host -BackgroundColor Red "This script requires a recent version of the AzureAD PowerShell module. Download it here: https://www.powershellgallery.com/packages/AzureAD/"; return}
 try { Get-AzureADTenantDetail | Out-Null }
 catch { Connect-AzureAD | Out-Null }
 

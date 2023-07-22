@@ -1,4 +1,4 @@
-﻿param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes)
+param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes)
 
 #For details on what the script does and how to run it, check: https://www.michev.info/blog/post/4007/updated-version-of-the-calendar-permissions-inventory-script
 

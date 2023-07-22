@@ -1,4 +1,4 @@
-﻿param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$CondensedOutput)
+param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$CondensedOutput)
 
 function Get-CalendarPermissionInventory {
 <#
@@ -145,4 +145,4 @@ function Get-CalendarPermissionInventory {
 }
 
 #Invoke the Get-CalendarPermissionInventory function and pass the command line parameters. Make sure the output is stored in a variable for reuse, even if not specified in the input!
-Get-CalendarPermissionInventory @PSBoundParameters -OutVariable global:varPermissions  | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_CalendarPermissions.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
+Get-CalendarPermissionInventory @PSBoundParameters -OutVariable global:varPermissions  #| Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_CalendarPermissions.csv" -NoTypeInformation -Encoding UTF8 -UseCulture

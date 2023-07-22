@@ -1,4 +1,4 @@
-﻿#Helper function for loading the mailbox data. If no existing CSV file is found or it is outdated, the function will generate a new file (might take some time)...
+#Helper function for loading the mailbox data. If no existing CSV file is found or it is outdated, the function will generate a new file (might take some time)...
 function Load-MailboxMatchInputFile {
     $importCSV = Get-ChildItem -Path $PSScriptRoot -Filter "*MailboxReport.csv" | sort LastWriteTime -Descending | select -First 1 #| select -ExpandProperty FullName
  
@@ -97,4 +97,4 @@ foreach ($device in $MobileDevices) {
 }
 
 #Export the output to a CSV file
-$MobileDevices | Export-Csv -Path "$PSScriptRoot\$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_MobileDeviceReport.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
+$MobileDevices #| Export-Csv -Path "$PSScriptRoot\$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_MobileDeviceReport.csv" -NoTypeInformation -Encoding UTF8 -UseCulture

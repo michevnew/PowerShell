@@ -1,6 +1,6 @@
-﻿#Variables to configure
+#Variables to configure
 $tenantID = "tenant.onmicrosoft.com" #your tenantID or tenant root domain
-$appID = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" #the GUID of your app. For best result, use app with Team.ReadBasic.All, TeamsAppInstallation.ReadForTeam.All and TeamsTab.Read.All scopes granted.
+$appID = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" #the GUID of your app. For best result, use app with TeamsAppInstallation.ReadForTeam.All and TeamsTab.Read.All scopes granted.
 $client_secret = "verylongsecurestring" #client secret for the app
 
 #Prepare token request

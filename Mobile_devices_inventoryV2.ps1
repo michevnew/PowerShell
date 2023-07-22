@@ -1,4 +1,4 @@
-﻿#Requires -Version 3.0
+#Requires -Version 3.0
 #Requires -Modules @{ ModuleName="ExchangeOnlineManagement"; ModuleVersion="3.0.0" }
 #For details on what the script does and how to run it, check: https://www.michev.info/blog/post/5639/mobile-device-inventory-and-statistics-report-2023-updated-version
 

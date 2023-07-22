@@ -1,4 +1,4 @@
-﻿#Requires -Version 3.0
+#Requires -Version 3.0
 #Requires -Modules @{ ModuleName="ExchangeOnlineManagement"; ModuleVersion="3.0.0" }
 [CmdletBinding()] #Make sure we can use -Verbose
 Param([switch]$IncludeAll,[switch]$IncludeDGs,[switch]$IncludeDynamicDGs,[switch]$IncludeO365Groups,[switch]$RecursiveOutput,[switch]$RecursiveOutputListGroups,[string[]]$GroupList)

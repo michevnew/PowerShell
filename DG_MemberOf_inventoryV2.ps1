@@ -1,4 +1,4 @@
-﻿param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$IncludeMailUsers,[switch]$IncludeMailContacts,[switch]$IncludeGuestUsers,[switch]$IncludeUsers)
+param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$IncludeMailUsers,[switch]$IncludeMailContacts,[switch]$IncludeGuestUsers,[switch]$IncludeUsers)
 
 function Check-Connectivity {
     #Make sure we are connected to Exchange Online PowerShell

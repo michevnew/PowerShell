@@ -1,4 +1,4 @@
-﻿#Requires -Version 3.0
+#Requires -Version 3.0
 #Requires -Modules @{ ModuleName="ExchangeOnlineManagement"; ModuleVersion="3.0.0" }
 #For details on what the script does and how to run it, check: https://www.michev.info/blog/post/5704/reporting-on-microsoft-365-groups-links-2023-updated-version
 param([switch]$CondensedOutput)

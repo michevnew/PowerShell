@@ -1,8 +1,8 @@
 #Set up
 $AppId = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" #clientID of your AAD app, must have User.Read.All, Directory.Read.All, Auditlogs.Read.All permissions
-$client_secret = Get-Content .\ReportingAPIsecret.txt | ConvertTo-SecureString
+$client_secret = Get-Content '.\Login script\ReportingApiSecret.txt' | ConvertTo-SecureString
 $app_cred = New-Object System.Management.Automation.PsCredential($AppId, $client_secret)
-$TenantId = "tenant.onmicrosoft.com" #your tenant
+$TenantId = "michev.onmicrosoft.com" #your tenant
 
 $body = @{
     client_id     = $AppId
@@ -29,3 +29,6 @@ $result = ($LastLogin.Content | ConvertFrom-Json).Value
 $result  | select DisplayName,UserPrincipalName,@{n="LastLoginDate";e={$_.signInActivity.lastSignInDateTime}}
 
 #$result | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_LastLoginDate.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
+
+
+#https://docs.microsoft.com/en-us/graph/api/user-list?view=graph-rest-beta&tabs=http#example-5-list-the-last-sign-in-time-of-users-in-a-specific-time-range

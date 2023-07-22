@@ -1,4 +1,4 @@
-﻿#Requires -Version 3.0
+#Requires -Version 3.0
 #Make sure to fill in all the required variables before running the script
 #Also make sure the AppID used corresponds to an app with sufficient permissions, as follows:
 #    Directory.Read.All (hard-requirement for oauth2PermissionGrants, covers everything else needed)

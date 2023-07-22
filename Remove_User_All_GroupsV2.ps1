@@ -1,4 +1,4 @@
-﻿#Requires -Version 3.0
+#Requires -Version 3.0
 #Requires -Modules @{ ModuleName="ExchangeOnlineManagement"; ModuleVersion="3.0.0" }
 #Requires -Modules @{ ModuleName="Microsoft.Graph.Groups"; ModuleVersion="1.19.0" }
 #Requires -Modules @{ ModuleName="Microsoft.Graph.Users"; ModuleVersion="1.19.0" }
@@ -121,7 +121,8 @@ This parameter accepts the following values:
         foreach ($us in $Identity) {
             Start-Sleep -Milliseconds 80 #Add some delay to avoid throttling...
             #Make sure a matching user object is found and return its DN. While we can handle other object type easily on Exchange side, on AAD side we need additional cmdlets, checks, etc...
-            $GUID = Get-User $us -Filter {RecipientType -eq 'User' -or RecipientType -eq 'UserMailbox' -or RecipientType -eq 'MailUser'} | Select-Object DistinguishedName,ExternalDirectoryObjectId #silence these errors or?
+            #$GUID = Get-User $us -Filter {RecipientType -eq 'User' -or RecipientType -eq 'UserMailbox' -or RecipientType -eq 'MailUser'} | Select-Object DistinguishedName,ExternalDirectoryObjectId #silence these errors or?
+            $GUID = Get-User $us | Select-Object DistinguishedName,ExternalDirectoryObjectId #silence these errors or?
             if (!$GUID) { Write-Verbose "Security principal with identifier $us not found, skipping..."; continue }
             elseif (($GUID.count -gt 1) -or ($GUIDs[$us]) -or ($GUIDs.ContainsValue($GUID))) { Write-Verbose "Multiple users matching the identifier $us found, skipping..."; continue }
             else { $GUIDs[$us] = $GUID | Select-Object DistinguishedName,ExternalDirectoryObjectId }
@@ -184,7 +185,7 @@ This parameter accepts the following values:
             }
 
             #Handle Azure AD security groups
-            if ($IncludeAADSecurityGroups) {
+            if ($IncludeAADSecurityGroups -and $user.value.ExternalDirectoryObjectId) { #Some Exchange recipients will have empty ExternalDirectoryObjectId value, skip them
                 Write-Verbose "Obtaining security group list for user ""$($user.Name)""..."
                 $GroupsAD = Get-MgUserMemberOf -UserId $($user.value.ExternalDirectoryObjectId) -All -Filter {securityEnabled eq true and mailEnabled eq false} -ConsistencyLevel eventual -CountVariable count -Property id,displayName,mailEnabled,securityEnabled,membershipRule,mail,isAssignableToRole,groupTypes
 

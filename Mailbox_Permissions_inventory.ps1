@@ -1,4 +1,4 @@
-﻿param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$IncludeDiscoveryMailboxes,[switch]$IncludeTeamMailboxes)
+param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$IncludeDiscoveryMailboxes,[switch]$IncludeTeamMailboxes)
 
 function Get-MailboxPermissionInventory {
 <#
@@ -64,7 +64,7 @@ function Get-MailboxPermissionInventory {
     }
     
     #If no mailboxes are returned from the above cmdlet, stop the script and inform the user
-    if (!$MBList) { Write-Error "No mailboxes of the specifyied types were found, specify different criteria." -ErrorAction Stop}
+    if (!$MBList) { Write-Error "No mailboxes of the specified types were found, specify different criteria." -ErrorAction Stop}
 
     #Once we have the mailbox list, cycle over each mailbox to gather permissions inventory
     $arrPermissions = @()

@@ -1,4 +1,4 @@
-﻿#Requires -Version 3.0
+#Requires -Version 3.0
 [CmdletBinding()] #Make sure we can use -Verbose
 Param([switch]$IncludeRoleGroups,[switch]$IncludeUnassignedRoleGroups,[switch]$IncludeDelegatingAssingments)
 
@@ -155,7 +155,7 @@ if ($IncludeRoleGroups -and $IncludeUnassignedRoleGroups) {
 }
 
 #Dump the raw output to a CSV file
-$output | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_RoleAssignments.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
+$output #| Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_RoleAssignments.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
 
 #Transform the output and return it to the console. Group assignments by individual user/group
 $global:varRoleAssignments = $output | group Assignee | select @{n="DisplayName";e={($_.Group.AssigneeName | sort -Unique)}},@{n="Identifier";e={$_.Name}},@{n="ObjectType";e={($_.Group.AssigneeType | sort -Unique) -join ","}},@{n="AssignmentType";e={($_.Group.AssignmentType | sort -Unique) -join ","}},@{n="Roles";e={($_.Group.AssignedRoles | sort -Unique) -join ","}} | sort DisplayName

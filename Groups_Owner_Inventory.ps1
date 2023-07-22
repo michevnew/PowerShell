@@ -1,4 +1,4 @@
-﻿param([switch]$IncludeExchangeManagedBy)
+param([switch]$IncludeExchangeManagedBy)
 
 #Make sure we try the AzureADPreview module first, as it surfaces more details...
 Remove-Module AzureAD -ErrorAction SilentlyContinue

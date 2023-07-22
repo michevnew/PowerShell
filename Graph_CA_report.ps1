@@ -1,4 +1,4 @@
-﻿#Set up
+#Set up
 $AppId = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" #clientID of your AAD app, must have Policy.Read.All permissions. Also needs Directory.Read.All permissions if you want the "readable" object names
 $client_secret = Get-Content .\ReportingAPIsecret.txt | ConvertTo-SecureString
 $app_cred = New-Object System.Management.Automation.PsCredential($AppId, $client_secret)

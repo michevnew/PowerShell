@@ -1,4 +1,4 @@
-﻿#Requires -Version 3.0
+#Requires -Version 3.0
 #Requires -Modules @{ ModuleName="Microsoft.Graph.Users"; ModuleVersion="1.19.0" }
 
 #For details on what the script does and how to run it, check: https://www.michev.info/blog/post/5716/reporting-on-synchronized-users-ou-via-the-graph-sdk-for-powershell

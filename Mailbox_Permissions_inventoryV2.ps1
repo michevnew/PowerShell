@@ -1,4 +1,4 @@
-﻿param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$IncludeSoftDeleted)
+param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$IncludeSoftDeleted)
 
 #For details on what the script does and how to run it, check: https://www.michev.info/blog/post/4021/updated-version-of-the-mailbox-permissions-inventory-script
 

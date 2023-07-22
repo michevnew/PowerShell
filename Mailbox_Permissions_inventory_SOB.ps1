@@ -1,4 +1,4 @@
-﻿param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$IncludeDiscoveryMailboxes,[switch]$IncludeGroupMailboxes,[switch]$IncludeTeamMailboxes,[switch]$IncludeDGs)
+param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$IncludeDiscoveryMailboxes,[switch]$IncludeGroupMailboxes,[switch]$IncludeTeamMailboxes,[switch]$IncludeDGs)
 
 function Get-SOBPermissionInventory {
 <#

@@ -1,4 +1,4 @@
-﻿#Requires -Version 3.0
+#Requires -Version 3.0
 param([switch]$CondensedOutput)
 
 #Helper function for fetching data from Exchange Online

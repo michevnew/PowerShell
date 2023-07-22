@@ -1,4 +1,4 @@
-﻿$AppId = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+$AppId = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 $client_secret = Get-Content .\ReportingAPIsecret.txt | ConvertTo-SecureString
 $app_cred = New-Object System.Management.Automation.PsCredential($AppId, $client_secret)
 $TenantId = "tenant.onmicrosoft.com"
