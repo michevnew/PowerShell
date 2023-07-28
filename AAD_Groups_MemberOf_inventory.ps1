@@ -79,7 +79,7 @@ else {
 #region GroupMembership
 #Cycle over each user and fetch group membership
 $output = [System.Collections.Generic.List[Object]]::new() #output variable
-$i=0; $count = 1; $PercentComplete = 0;
+$count = 1; $PercentComplete = 0;
 foreach ($u in $Users) {
     #Progress message
     $ActivityMessage = "Retrieving data for user $($u.userPrincipalName). Please wait..."
@@ -146,4 +146,4 @@ foreach ($u in $Users) {
 #endregion GroupMembership
 
 #Finally, export to CSV
-$output | select * | Export-CSV -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_AADGroupMembership.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
+$output | select * #| Export-CSV -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_AADGroupMembership.csv" -NoTypeInformation -Encoding UTF8 -UseCulture

@@ -9,9 +9,9 @@ $appPermissions = @();$i=0;
 
 foreach ($ServicePrincipal in $ServicePrincipals) {
     $SPperm = Get-AzureADServicePrincipalOAuth2PermissionGrant -ObjectId $ServicePrincipal.ObjectId -All:$true
-    
+
     $OAuthperm = @{};
-    $assignedto = @();$resID = $null; $userId = $null;   
+    $assignedto = @();$resID = $null; $userId = $null;
     $objPermissions = New-Object PSObject
 
     $i++;Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Number" -Value $i
@@ -22,7 +22,7 @@ foreach ($ServicePrincipal in $ServicePrincipals) {
     Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "ObjectId" -Value $ServicePrincipal.ObjectId
     Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Enabled" -Value $ServicePrincipal.AccountEnabled
     Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Valid until" -Value ($SPperm.ExpiryTime | select -Unique | sort -Descending | select -First 1)
-    
+
     Write-Host $SPperm.Scope
     $SPperm | % {#CAN BE DIFFERNT FOR DIFFERENT USERS!
         $resID = (Get-AzureADObjectByObjectId -ObjectIds $_.ResourceId).DisplayName
@@ -30,12 +30,12 @@ foreach ($ServicePrincipal in $ServicePrincipals) {
         $OAuthperm["[" + $resID + $userId + "]"] = (($_.Scope.Split(" ") | select -Unique) -join ",")
     }
     Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Permissions" -Value (($OAuthperm.GetEnumerator()  | % { "$($_.Name):$($_.Value)" }) -join ";")
-    
+
     if (($SPperm.ConsentType | select -Unique) -eq "AllPrincipals") { $assignedto += "All users (admin consent)" }
     try { $assignedto += (Get-AzureADObjectByObjectId -ObjectIds ($SPperm.PrincipalId | select -Unique)).UserPrincipalName }
     catch {}
     Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Authorized By" -Value ($assignedto -join ", ")
-    
+
     $appPermissions += $objPermissions
 }
 

@@ -27,11 +27,11 @@ function Get-CalendarPermissionInventory {
 #>
 
     [CmdletBinding()]
-    
+
     Param
     (
     #Specify whether to include user mailboxes in the result
-    [Switch]$IncludeUserMailboxes,    
+    [Switch]$IncludeUserMailboxes,
     #Specify whether to include Shared mailboxes in the result
     [Switch]$IncludeSharedMailboxes,
     #Specify whether to include Room and Equipment mailboxes in the result
@@ -41,14 +41,13 @@ function Get-CalendarPermissionInventory {
     #Specify whether to write the output in condensed format
     [Switch]$CondensedOutput)
 
-    
     #Initialize the variable used to designate mailbox types, based on the input parameters
     $included = @()
     if($IncludeSharedMailboxes) { $included += "SharedMailbox"}
     if($IncludeRoomMailboxes) { $included += "RoomMailbox"; $included += "EquipmentMailbox"}
     #if no parameters specified, return only User mailboxes
     if($IncludeUserMailboxes -or !$included) { $included += "UserMailbox"}
-        
+
     #Confirm connectivity to Exchange Online
     try { $session = Get-PSSession -InstanceId (Get-OrganizationConfig).RunspaceId.Guid -ErrorAction Stop  }
     catch { Write-Error "No active Exchange Online session detected, please connect to ExO first: https://technet.microsoft.com/en-us/library/jj984289(v=exchg.160).aspx" -ErrorAction Stop }
@@ -60,7 +59,7 @@ function Get-CalendarPermissionInventory {
     else {
         $MBList = Invoke-Command -Session $session -ScriptBlock { Get-Mailbox -ResultSize Unlimited -RecipientTypeDetails $Using:included | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails }
     }
-    
+
     #If no mailboxes are returned from the above cmdlet, stop the script and inform the user
     if (!$MBList) { Write-Error "No mailboxes of the specifyied types were found, specify different criteria." -ErrorAction Stop}
 
@@ -130,7 +129,7 @@ function Get-CalendarPermissionInventory {
                 elseif ($entry.User.UserType.ToString() -eq "External") { $varUser = $entry.User.RecipientPrincipal.PrimarySmtpAddress.Replace("ExchangePublishedUser.",$null); $varType = "External" }
                 elseif ($entry.User.UserType.ToString() -eq "Unknown") { $varUser = $entry.User.DisplayName; $varType = "Orphaned" }
                 else { continue }
-                    
+
                 Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "User" -Value $varUser
                 Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Permissions" -Value $($entry.AccessRights -join ";")
                 Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Permission Type" -Value $varType

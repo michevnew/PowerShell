@@ -72,7 +72,7 @@ foreach ($user in $users) {
         Write-Verbose "Processing license $($license.SkuId) ($($SKU.skuPartNumber))"
 
         #Check if the license is assigned via Group, and if so, skip. Otherwise we will end up assigning the SKU directly...
-        if (!($user.licenseAssignmentStates | ? {$_.SkuId -eq $license.skuId}).assignedByGroup) { 
+        if (!($user.licenseAssignmentStates | ? {$_.SkuId -eq $license.skuId}).assignedByGroup) {
             foreach ($planToEnable in $plansToEnable) {
                 if ($planToEnable -notmatch "^[{(]?[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}[)}]?$") { $planToEnable = ($SKU.ServicePlans | ? {$_.ServicePlanName -eq "$planToEnable"}).ServicePlanId }
                 if (($planToEnable -in $SKU.ServicePlans.ServicePlanId) -and ($planToEnable -in $license.DisabledPlans)) {
@@ -82,8 +82,8 @@ foreach ($user in $users) {
                 }
         }}
         else { Write-Verbose "License $($license.SkuId) ($($SKU.skuPartNumber)) is assigned via group, no changes will be made." }
-        
-        $userLicenses += $license    
+
+        $userLicenses += $license
     }
 
     #Check if changes are needed

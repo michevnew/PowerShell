@@ -41,7 +41,7 @@ else {
 #region GroupMembership
 #Cycle over each user and fetch group membership
 $output = [System.Collections.Generic.List[Object]]::new() #output variable
-$i=0; $count = 1; $PercentComplete = 0;
+$count = 1; $PercentComplete = 0;
 foreach ($u in $Users) {
     #Progress message
     $ActivityMessage = "Retrieving data for user $($u.userPrincipalName). Please wait..."
@@ -84,7 +84,7 @@ foreach ($u in $Users) {
     #For each group returned, output the relevant details
     foreach ($Group in $uGroups) {
         if ($Group.AdditionalProperties.'@odata.type' -ne "#microsoft.graph.group") { continue } #Filter out non-group objects
-        
+
         #prepare the output
         $uInfo = [PSCustomObject][ordered]@{
             "Id" = $u.id

@@ -28,7 +28,7 @@ $body = @{
     scope = $Scopes
 }
 
-try { 
+try {
     Set-Variable -Name authenticationResult -Scope Global -Value (Invoke-WebRequest -Method Post -Uri $url -Debug -Verbose -Body $body)
     $token = ($authenticationResult.Content | ConvertFrom-Json).access_token
 }
@@ -37,7 +37,7 @@ catch { $_; return }
 if (!$token) { Write-Host "Failed to aquire token!"; return }
 else {
     Write-Verbose "Successfully acquired Access Token"
-        
+
     #Use the access token to set the authentication header
     Set-Variable -Name authHeader -Scope Global -Value @{'Authorization'="Bearer $token";'Content-Type'='application\json'}
 }

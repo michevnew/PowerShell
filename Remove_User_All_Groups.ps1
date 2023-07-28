@@ -5,7 +5,7 @@ Param([ValidateNotNullOrEmpty()][Alias("UserToRemove")][String[]]$Identity,[swit
 
 function Check-Connectivity {
     [cmdletbinding()]
-
+    [OutputType([bool])]
     param([switch]$IncludeAADSecurityGroups)
 
     #Make sure we are connected to Exchange Remote PowerShell
@@ -13,10 +13,10 @@ function Check-Connectivity {
     if (!$session -or ($session.State -ne "Opened")) {
         try { $script:session = Get-PSSession -InstanceId (Get-AcceptedDomain | select -First 1).RunspaceId.Guid -ErrorAction Stop  }
         catch {
-            try { 
-                $script:session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri https://outlook.office365.com/powershell-liveid/ -Credential (Get-Credential) -Authentication Basic -AllowRedirection -ErrorAction Stop 
-                Import-PSSession $session -ErrorAction Stop | Out-Null 
-            }  
+            try {
+                $script:session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri https://outlook.office365.com/powershell-liveid/ -Credential (Get-Credential) -Authentication Basic -AllowRedirection -ErrorAction Stop
+                Import-PSSession $session -ErrorAction Stop | Out-Null
+            }
             catch { Write-Error "No active Exchange Remote PowerShell session detected, please connect first. To connect to ExO: https://technet.microsoft.com/en-us/library/jj984289(v=exchg.160).aspx" -ErrorAction Stop }
         }
     }
@@ -37,7 +37,7 @@ function Remove-UserFromAllGroups {
 .Synopsis
    Removes user from all groups in Office 365
 .DESCRIPTION
-   The Remove-UserFromAllGroups function remove a given user, or a list of users, as members from any groups in the organization. Group types include Distribution Groups, Mail-Enabled Security Groups, Office 365 Groups. The command accepts pipeline input. 
+   The Remove-UserFromAllGroups function remove a given user, or a list of users, as members from any groups in the organization. Group types include Distribution Groups, Mail-Enabled Security Groups, Office 365 Groups. The command accepts pipeline input.
 .PARAMETER Identity
     Identity the -Identity parameter to designate the list of users. Any valid Exchange user identifier can be specified. Multiple users can be specified in a comma-separated list or array, see examples below.
 .PARAMETER IncludeAADSecurityGroups
@@ -63,7 +63,7 @@ function Remove-UserFromAllGroups {
 
    C:\> "vasil","huku" | Remove-UserFromAllGroups
 .INPUTS
-   User object 
+   User object
 .OUTPUTS
    None
 #>
@@ -94,7 +94,7 @@ This parameter accepts the following values:
     Begin {
         #Check if we are connected to Exchange Online PowerShell and if needed, to Azure AD...
         if (Check-Connectivity -IncludeAADSecurityGroups:$IncludeAADSecurityGroups) { Write-Verbose "Parsing the Identity parameter..." }
-        else { Write-Host "ERROR: Connectivity test failed, exiting the script..." -ForegroundColor Red; continue } 
+        else { Write-Host "ERROR: Connectivity test failed, exiting the script..." -ForegroundColor Red; continue }
     }
 
     Process {
@@ -116,7 +116,7 @@ This parameter accepts the following values:
         foreach ($user in $GUIDs.GetEnumerator()) {
             Write-Verbose "Processing user ""$($user.Name)""..."
             Start-Sleep -Milliseconds 80 #Add some delay to avoid throttling...
-            
+
             #Handle Exchange groups
             Write-Verbose "Obtaining group list for user ""$($user.Name)""..."
             if ($IncludeOffice365Groups) { $GroupTypes = @("GroupMailbox","MailUniversalDistributionGroup","MailUniversalSecurityGroup") }
@@ -143,7 +143,7 @@ This parameter accepts the following values:
                     }
                     catch {$_ | fl * -Force; continue} #catch-all for any unhandled errors
                 }
-                else { 
+                else {
                     try { Invoke-Command -Session $session -ScriptBlock { Remove-DistributionGroupMember -Identity $using:Group.ExternalDirectoryObjectId -Member $using:user.Value.DistinguishedName -BypassSecurityGroupManagerCheck -Confirm:$false -WhatIf:$using:WhatIfPreference -ErrorAction Stop } }
                     catch [System.Management.Automation.RemoteException] {
                         if ($_.CategoryInfo.Reason -eq "ManagementObjectNotFoundException") { Write-Host "ERROR: The specified object not found, this should not happen..." -ForegroundColor Red }
@@ -161,7 +161,7 @@ This parameter accepts the following values:
 
                 if (!$GroupsAD) { Write-Verbose "No matching security groups found for ""$($user.Name)"", skipping..." }
                 else { Write-Verbose "User ""$($user.Name)"" is a member of $(($GroupsAD | measure).count) security group(s)." }
-            
+
                 #cycle over each Group
                 foreach ($groupAD in $GroupsAD) {
                     Write-Verbose "Removing user ""$($user.Name)"" from group ""$($GroupAD.DisplayName)"""

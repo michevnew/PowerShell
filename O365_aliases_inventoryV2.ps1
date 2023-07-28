@@ -50,11 +50,11 @@ function Get-EmailAddressesInventory {
 #>
 
     [CmdletBinding()]
-    
+
     Param
     (
     #Specify whether to include User mailboxes in the output
-    [Switch]$IncludeUserMailboxes,    
+    [Switch]$IncludeUserMailboxes,
     #Specify whether to include Shared mailboxes in the output
     [Switch]$IncludeSharedMailboxes,
     #Specify whether to include Room, Equipment and Scheduling mailboxes in the output
@@ -76,7 +76,7 @@ function Get-EmailAddressesInventory {
     #Specify whether to include SPO aliases in the output
     [switch]$IncludeSPOAliases)
 
-    
+
     #Initialize the variable used to designate recipient types, based on the input parameters
     $included = @()
     if($IncludeSharedMailboxes) { $included += "SharedMailbox"}
@@ -85,12 +85,12 @@ function Get-EmailAddressesInventory {
     if($IncludeMailContacts) { $included += "MailContact"}
     if($IncludeGroupMailboxes) { $included += "GroupMailbox"}
     if($IncludeDGs) { $included += 'DynamicDistributionGroup', 'MailUniversalDistributionGroup', 'MailUniversalSecurityGroup', 'RoomList'}
-    
+
     #If no parameters specified, return only User mailboxes
     if($IncludeUserMailboxes -or !$included) { $included += "UserMailbox" }
 
     #Use the -IncludeAll parameter if you want to cover all recipient types. Full list below:
-    if($IncludeAll) { 
+    if($IncludeAll) {
         $Included = @(
             'UserMailbox',
             'SharedMailbox',
@@ -157,7 +157,7 @@ function Get-EmailAddressesInventory {
                 if (($entry.Split(":")[0] -eq "SIP" -or $entry.Split(":")[0] -eq "EUM") -and !($IncludeSIPAliases -or $IncludeAll)) { continue }
                 if ($entry.Split(":")[0] -eq "SPO" -and !($IncludeSPOAliases -or $IncludeAll)) { continue }
                 Add-Member -InputObject $objAliases -MemberType NoteProperty -Name "Aliases" -Value $entry
-                
+
                 $arrAliases += $objAliases
             }
             #Handle External email address for Mail User/Mail Contact objects

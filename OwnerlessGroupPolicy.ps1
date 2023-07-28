@@ -1,4 +1,4 @@
-######################################################################################################## 
+########################################################################################################
 #    For details on what the script does and how to run it, check:                                     #
 #    https://www.michev.info/blog/post/4148/ownerless-group-policy-cmdlets-replacement                 #
 ########################################################################################################
@@ -23,7 +23,7 @@ function Get-MSALTokenForDefaultApp {
         }
     catch {
         Write-Verbose "No valid value of `$TenantId provided, ignoring the parameter..."
-        $app = [Microsoft.Identity.Client.PublicClientApplicationBuilder]::Create("fb78d390-0c51-40cd-8e17-fdbfab77341b").WithRedirectUri("https://login.microsoftonline.com/common/oauth2/nativeclient").WithBroker().Build() 
+        $app = [Microsoft.Identity.Client.PublicClientApplicationBuilder]::Create("fb78d390-0c51-40cd-8e17-fdbfab77341b").WithRedirectUri("https://login.microsoftonline.com/common/oauth2/nativeclient").WithBroker().Build()
         }
 
     #Use default value for scopes
@@ -65,7 +65,7 @@ function Get-OwnerlessGroupPolicy {
     $authHeader = @{
         'Authorization'="Bearer $($AccessToken)"
     }
-  
+
     #Validate the Tenant ID
     try {
         [System.Guid]::Parse($TenantId) | Out-Null
@@ -128,7 +128,7 @@ function Set-OwnerlessGroupPolicy {
     $authHeader = @{
         'Authorization'="Bearer $($AccessToken)"
     }
-  
+
     #Validate the Tenant ID. As we DO NOT parse the JWT, you must ensure the tenantID value matches the corresponding claim in the access token!
     try {
         [System.Guid]::Parse($TenantId) | Out-Null
@@ -143,7 +143,7 @@ function Set-OwnerlessGroupPolicy {
 
         #SenderEmailAddress shennanigans. We can actually validate the value provided via a query to the EXO REST endpoint, with the same token!
         if ($PSBoundParameters.ContainsKey('SenderEmailAddress')) {
-            try { 
+            try {
             $sender = Invoke-RestMethod -Method Get -Uri "https://outlook.office.com/adminApi/beta/$($TenantId)/Recipient('$SenderEmailAddress')" -Headers $AuthHeader -Verbose -Debug -ErrorAction Stop
             $SenderEmailAddress = $sender.PrimarySmtpAddress.ToString()
             }
@@ -178,7 +178,7 @@ function Set-OwnerlessGroupPolicy {
             else {
                 if ($EnabledGroupsList) {
                     Write-Verbose "The following list of groups will be covered by the policy: $($EnabledGroupsList -join ",")"
-                    $parametersJson["enabledGroupIds"] = $EnabledGroupsList 
+                    $parametersJson["enabledGroupIds"] = $EnabledGroupsList
                 }
                 else { Write-Verbose "No matching Groups found for the value provided for the -EnabledGroupIds parameter, skipping..." }
             }

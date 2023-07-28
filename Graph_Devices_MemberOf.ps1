@@ -40,7 +40,7 @@ foreach ($device in $GraphDevices) {
     #Prepare the query, make sure to enter each additional group attribute you want to reference later on
     $uri = "https://graph.microsoft.com/v1.0/devices/$($device.id)/transitivememberof?`$select=id,displayName,groupTypes,mailEnabled,securityEnabled,visibility"
     $DeviceGroups = Invoke-WebRequest -Headers $authHeader -Uri $uri -ErrorAction Stop
-    
+
     #Prepare the device object information we will export, add additional properties as needed here
     $deviceinfo = New-Object psobject
     $deviceinfo | Add-Member -MemberType NoteProperty -Name "DeviceId" -Value $device.deviceId

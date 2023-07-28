@@ -14,7 +14,7 @@ foreach ($AADRole in $AADRoles) {
     $AADRoleMembers = Get-AzureADDirectoryRoleMember -ObjectId $AADRole.ObjectId
     #if no role members assigned, skip
     if (!$AADRoleMembers) { continue }
-    
+
     foreach ($AADRoleMember in $AADRoleMembers) {
         #prepare the output
         if (!$RolesHash[$AADRoleMember.ObjectId]) {

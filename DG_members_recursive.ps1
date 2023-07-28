@@ -10,9 +10,9 @@ function Check-Connectivity {
         catch {
             try {
                 #Failing to detect an active session, try connecting to ExO via Basic auth...
-                $script:session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri https://outlook.office365.com/powershell-liveid/ -Credential (Get-Credential) -Authentication Basic -AllowRedirection -ErrorAction Stop 
-                Import-PSSession $session -ErrorAction Stop | Out-Null 
-            }  
+                $script:session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri https://outlook.office365.com/powershell-liveid/ -Credential (Get-Credential) -Authentication Basic -AllowRedirection -ErrorAction Stop
+                Import-PSSession $session -ErrorAction Stop | Out-Null
+            }
             catch { Write-Error "No active Exchange Remote PowerShell session detected, please connect first. To connect to ExO: https://technet.microsoft.com/en-us/library/jj984289(v=exchg.160).aspx" -ErrorAction Stop }
         }
     }
@@ -49,8 +49,8 @@ function Get-GroupMemberRecursive {
     Distribution group identifier
 .OUTPUTS
     Array with basic information about the group and list of all members.
-#>    
-    
+#>
+
     [CmdletBinding()]
 
     Param(
@@ -69,7 +69,7 @@ function Get-GroupMemberRecursive {
     #Get the group object. If additional properties of the group are required, make sure to add them to the script block!
     $DG = Invoke-Command -Session $session -ScriptBlock { Get-Recipient -Identity $using:Identity -RecipientTypeDetails MailUniversalDistributionGroup,DynamicDistributionGroup,MailUniversalSecurityGroup,GroupMailbox -ErrorAction SilentlyContinue | Select-Object -Property Name,PrimarySmtpAddress,Guid,RecipientTypeDetails } -HideComputerName
     if (!$DG) { Throw "Group $Identity not found" }
-    
+
     #Prepare the output object.
     $members = New-Object System.Collections.ArrayList
     #Use the hash table to prevent infinite looping in Get-Membership. This is the only reason we're using a separate funciton.
@@ -83,7 +83,7 @@ function Get-GroupMemberRecursive {
 
     #Make sure we return an unique-valued identifier for each member.
     $members = $members | select @{n="Identifier";e={if ($_.PrimarySmtpAddress) { $_.PrimarySmtpAddress } else {$_.UserPrincipalName}}}
-    #$members | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_MembershipReport_$($DG.Name).csv" -NoTypeInformation -Encoding UTF8 -UseCulture 
+    #$members | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_MembershipReport_$($DG.Name).csv" -NoTypeInformation -Encoding UTF8 -UseCulture
     return $members
 }
 
@@ -104,7 +104,7 @@ function Get-Membership {
     #Process membership depending on the recipient type.
     Write-Verbose "Processing group $($group.Name) of type $($group.RecipientTypeDetails.Value) ..."
     if ($group.RecipientTypeDetails.Value -eq "GroupMailbox") { $list = Invoke-Command -Session $session -ScriptBlock { Get-UnifiedGroupLinks -Identity ($using:group).PrimarySmtpAddress.ToString() -ResultSize Unlimited -LinkType Member } -HideComputerName | Select-Object -Property Name,WindowsLiveID,UserPrincipalName,PrimarySmtpAddress,Guid,RecipientTypeDetails,ExternalEmailAddress,ExternalDirectoryObjectId }
-    elseif ($group.RecipientTypeDetails.Value -eq "DynamicDistributionGroup") { 
+    elseif ($group.RecipientTypeDetails.Value -eq "DynamicDistributionGroup") {
         $filter = (Get-DynamicDistributionGroup $group.PrimarySmtpAddress.ToString()).RecipientFilter
         $list = Invoke-Command -Session $session -ScriptBlock { Get-Recipient -RecipientPreviewFilter $using:filter -ResultSize Unlimited | Select-Object -Property Name,WindowsLiveID,UserPrincipalName,PrimarySmtpAddress,Guid,RecipientTypeDetails,ExternalEmailAddress,ExternalDirectoryObjectId } -HideComputerName
     }
@@ -117,8 +117,8 @@ function Get-Membership {
     foreach ($l in $list) {
         Write-Verbose "Processig $($l.Name) ..."
         #Check whether we have already processed this object and if so, skip it.
-        if ($l.Guid.Guid -eq $group.Guid.Guid -or $processed.ContainsValue($l.Guid.Guid)) { Write-Verbose "Recusrion detected, aborting..."; continue } 
-        
+        if ($l.Guid.Guid -eq $group.Guid.Guid -or $processed.ContainsValue($l.Guid.Guid)) { Write-Verbose "Recusrion detected, aborting..."; continue }
+
         #If the object is not yet processed, and is of type Group, toggle the variable to signal presence of nested groups.
         if ($l.RecipientTypeDetails.Value -match "Group") {
             $script:HasNestedGroups = $true
@@ -188,7 +188,7 @@ function Get-GroupMembershipReport {
 #>
 
     [CmdletBinding(DefaultParameterSetName='None')]
-    
+
     Param
     (
     #Specify whether to include "regular" DGs in the result.
@@ -207,7 +207,7 @@ function Get-GroupMembershipReport {
     #Initialize the parameters
     if (!$RecursiveOutput -and $RecursiveOutputListGroups) {
         $RecursiveOutputListGroups = $false
-        Write-Verbose "The parameter -RecursiveOutputListGroups can only be used when the -RecursiveOutput is specified as well, ignoring..." 
+        Write-Verbose "The parameter -RecursiveOutputListGroups can only be used when the -RecursiveOutput is specified as well, ignoring..."
     }
 
     #Initialize the variable used to designate group types, based on the input parameters.
@@ -227,7 +227,7 @@ function Get-GroupMembershipReport {
     else {
         $Groups = Invoke-Command -Session $session -ScriptBlock { Get-Recipient -ResultSize Unlimited -RecipientTypeDetails $Using:included |  Select-Object -Property Name,PrimarySmtpAddress,RecipientTypeDetails,ManagedBy } -HideComputerName
     }
-    
+
     #If no groups are returned from the above cmdlet, stop the script and inform the user.
     if (!$Groups) { Write-Error "No groups of the specifyied types were found, specify different criteria." -ErrorAction Stop }
 
@@ -240,7 +240,7 @@ function Get-GroupMembershipReport {
         $StatusMessage = ("Processing {0} of {1}: {2}" -f $count, @($Groups).count, $GName.PrimarySmtpAddress.ToString())
         $PercentComplete = ($count / @($Groups).count * 100)
         Write-Progress -Activity $ActivityMessage -Status $StatusMessage -PercentComplete $PercentComplete
-        $count++    
+        $count++
 
         #Get the list of members.
 	    $users = Get-GroupMemberRecursive -Identity $GName.PrimarySmtpAddress.ToString() -RecursiveOutput:$RecursiveOutput -RecursiveOutputListGroups:$RecursiveOutputListGroups
@@ -258,7 +258,7 @@ function Get-GroupMembershipReport {
 
 	    $arrGroupData += $objProperties
     }
-    
+
     #Output the result to the console host. Rearrange/sort as needed.
     $arrGroupData | sort PrimarySmtpAddress
 }

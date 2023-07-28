@@ -25,7 +25,7 @@ function Get-SOBPermissionInventory {
 #>
 
     [CmdletBinding()]
-    
+
     Param
     (
     #Specify whether to include user mailboxes in the result
@@ -67,7 +67,7 @@ function Get-SOBPermissionInventory {
         $MBList += (Get-UnifiedGroup -ResultSize Unlimited -Filter {GrantSendOnBehalfTo -ne $null} | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails,GrantSendOnBehalfTo) #workaround to include Group Mailboxes
         $MBList += (Get-DistributionGroup -ResultSize Unlimited -Filter {GrantSendOnBehalfTo -ne $null} | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails,GrantSendOnBehalfTo) #workaround to include DGs
         }
-        
+
     else {
         $MBList += Get-Mailbox -ResultSize Unlimited -RecipientTypeDetails $included -Filter {GrantSendOnBehalfTo -ne $null} | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails,GrantSendOnBehalfTo
         if ($IncludeGroupMailboxes) { $MBList += Get-UnifiedGroup -ResultSize Unlimited -Filter {GrantSendOnBehalfTo -ne $null} | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails,GrantSendOnBehalfTo }
@@ -90,7 +90,7 @@ function Get-SOBPermissionInventory {
             Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Recipient Address" -Value $MB.PrimarySmtpAddress
             Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Recipient type" -Value $MB.RecipientTypeDetails
             Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Access Rights" -Value "Send on Behalf of"
-            $arrPermissions += $objPermissions 
+            $arrPermissions += $objPermissions
         }
     }
 

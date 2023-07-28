@@ -26,7 +26,7 @@ function parse-DelegatePermissions {
     Param(
     #oauth2PermissionGrants object
     [Parameter(Mandatory=$true)]$oauth2PermissionGrants)
-   
+
     foreach ($oauth2PermissionGrant in $oauth2PermissionGrants) {
         $resID = (Get-ServicePrincipalRoleById $oauth2PermissionGrant.ResourceId).appDisplayName
         if ($null -ne $oauth2PermissionGrant.PrincipalId) {
@@ -86,7 +86,7 @@ $body = @{
     scope = $Scopes
 }
 
-try { 
+try {
     $res = Invoke-WebRequest -Method Post -Uri $url -Verbose -Body $body
     $token = ($res.Content | ConvertFrom-Json).access_token
 
@@ -160,19 +160,19 @@ foreach ($SP in $SPs) {
     if (!$appRoleAssignments) { Write-Verbose "No application permissions to report on for SP $($SP.id), skipping..." }
     else {
         $objPermissions.'Last modified' = (Get-Date($appRoleAssignments.CreationTimestamp | select -Unique | sort -Descending | select -First 1) -format g)
-    
+
         parse-AppPermissions $appRoleAssignments
         $objPermissions.'Permissions (application)' = (($OAuthperm.GetEnumerator()  | % { "$($_.Name):$($_.Value.ToString().TrimStart(','))"}) -join ";")
         $objPermissions.'Authorized By (application)' = "An administrator (application permissions)"
     }
-    
+
 
     #Check for oauth2PermissionGrants (delegate permissions)
     #Use /beta here, as /v1.0 does not return expiryTime
     $oauth2PermissionGrants = @()
     $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/beta/servicePrincipals/$($sp.id)/oauth2PermissionGrants" -Headers $authHeader -Verbose:$VerbosePreference
     $oauth2PermissionGrants = ($res.Content | ConvertFrom-Json).Value
-    
+
     $OAuthperm = @{};
     $assignedto = @();$resID = $null; $userId = $null;
 
@@ -182,7 +182,7 @@ foreach ($SP in $SPs) {
         parse-DelegatePermissions $oauth2PermissionGrants
         $objPermissions.'Permissions (delegate)' = (($OAuthperm.GetEnumerator() | % { "$($_.Name):$($_.Value.ToString().TrimStart(','))"}) -join ";")
         $objPermissions.'Valid until (delegate)' = (Get-Date($oauth2PermissionGrants.ExpiryTime | select -Unique | sort -Descending | select -First 1) -format g)
-        
+
         if (($oauth2PermissionGrants.ConsentType | select -Unique) -eq "AllPrincipals") { $assignedto += "All users (admin consent)" }
         $assignedto +=  @($OAuthperm.Keys) | % {if ($_ -match "\((.*@.*)\)") {$Matches[1]}}
         $objPermissions.'Authorized By (delegate)' = (($assignedto | select -Unique) -join ",")

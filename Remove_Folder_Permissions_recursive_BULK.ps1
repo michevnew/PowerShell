@@ -32,7 +32,7 @@ function ReturnFolderList {
 .OUTPUTS
     Array with information about the mailbox folders.
 #>
-    
+
     param([Parameter(Mandatory=$true, ValueFromPipeline=$true)]$SMTPAddress,[Parameter(Mandatory=$false)][String]$ParentFolderPath)
 
     if (!$session -or ($session.State -ne "Opened")) { Write-Error "No active Exchange Remote PowerShell session detected, please connect first. To connect to ExO: https://technet.microsoft.com/en-us/library/jj984289(v=exchg.160).aspx" -ErrorAction Stop }
@@ -116,7 +116,7 @@ function Remove-MailboxFolderPermissionsRecursive {
     }
     if (!$SMTPAddresses -or ($SMTPAddresses.Count -eq 0)) { Throw "No matching mailboxes found, check the parameter values." }
     Write-Verbose "The following list of mailboxes will be used: ""$($SMTPAddresses.Values -join ", ")"""
-    
+
     #Prepare the list of users (security principals)
     Write-Verbose "Parsing the User parameter..."
     $GUIDs = @{}
@@ -136,7 +136,7 @@ function Remove-MailboxFolderPermissionsRecursive {
     Write-Verbose "List of folder NAMES that will be excluded: ""$($excludedfolders -join ", ")"""
 #endregion
 
-#region PROCESS   
+#region PROCESS
     $out = @()
     foreach ($smtp in $SMTPAddresses.Values) {#should be unique, if needed select/sort
         Write-Verbose "Processing mailbox ""$smtp""..."
@@ -147,7 +147,7 @@ function Remove-MailboxFolderPermissionsRecursive {
         Write-Verbose "A total of $($folders.count) folders found for $($smtp)."
 
         if (!$folders) { Write-Verbose "No matching folders found for $($smtp), skipping..." ; continue }
-        
+
         #Cycle over each folder we are interested in
         foreach ($folder in $folders) {
             #"Fix" for folders with "/" characters, treat the Root folder separately
@@ -164,13 +164,13 @@ function Remove-MailboxFolderPermissionsRecursive {
                     $out += $outtemp; if (!$Quiet -and !$WhatIfPreference) { $outtemp } #Write output to the console unless the -Quiet parameter is used
                 }
                 catch [System.Management.Automation.RemoteException] {
-                    if ($_.CategoryInfo.Reason -eq "UserNotFoundInPermissionEntryException") { 
+                    if ($_.CategoryInfo.Reason -eq "UserNotFoundInPermissionEntryException") {
                         if (!$Quiet) { Write-Host "WARNING: No existing permissions entry found on ""$foldername"" for principal ""$($u.Name)""" -ForegroundColor Yellow }
                     }
                     elseif ($_.CategoryInfo.Reason -eq "CannotChangePermissionsOnFolderException") { Write-Host "ERROR: Folder permissions for ""$foldername"" CANNOT be changed!" -ForegroundColor Red }
                     elseif ($_.CategoryInfo.Reason -eq "CannotRemoveSpecialUserException") { Write-Host "ERROR: Folder permissions for ""$($u.Name)"" CANNOT be changed!" -ForegroundColor Red }
                     elseif ($_.CategoryInfo.Reason -eq "ManagementObjectNotFoundException") { Write-Host "ERROR: Folder ""$foldername"" not found, this should not happen..." -ForegroundColor Red }
-                    elseif ($_.CategoryInfo.Reason -eq "InvalidInternalUserIdException") { 
+                    elseif ($_.CategoryInfo.Reason -eq "InvalidInternalUserIdException") {
                         Write-Host "ERROR: ""$($u.Name)"" is not a valid security principal for folder-level permissions, removing from list..." -ForegroundColor Red
                         $GUIDs.Remove($u.Name)
                         if ($GUIDs.Count) { continue } else { Write-Verbose "No valid security principals for folder-level permissions remaining, exiting the script..." ; return $out | Out-Default }
@@ -179,7 +179,7 @@ function Remove-MailboxFolderPermissionsRecursive {
                 }
                 catch {$_ | fl * -Force; continue} #catch-all for any unhandled errors
             }
-            
+
     }}
 #endregion
     if ($out) {
@@ -193,6 +193,6 @@ function Remove-MailboxFolderPermissionsRecursive {
 
 #Invoke the Remove-MailboxFolderPermissionsRecursive function and pass the command line parameters. Make sure the output is stored in a variable for reuse, even if not specified in the input!
 if ($PSBoundParameters.Count -and $PSBoundParameters.Keys -notmatch "WhatIf|Verbose|ErrorAction|ErrorVariable|Confirm|Debug|WarningAction|WarningVariable|InformationAction|InformationVariable|OutVariable|OutBuffer|PipelineVariable") {
-    Remove-MailboxFolderPermissionsRecursive @PSBoundParameters -OutVariable global:varFolderPermissionsRemoved 
+    Remove-MailboxFolderPermissionsRecursive @PSBoundParameters -OutVariable global:varFolderPermissionsRemoved
 }
 else { Write-Host "INFO: The script was run without parameters, consider dot-sourcing it instead." -ForegroundColor Cyan }

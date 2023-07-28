@@ -30,11 +30,11 @@ function Get-MailboxFolderPermissionInventory {
 #>
 
     [CmdletBinding()]
-    
+
     Param
     (
     #Specify whether to include user mailboxes in the result
-    [Switch]$IncludeUserMailboxes,    
+    [Switch]$IncludeUserMailboxes,
     #Specify whether to include Shared mailboxes in the result
     [Switch]$IncludeSharedMailboxes,
     #Specify whether to include Room and Equipment mailboxes in the result
@@ -57,14 +57,14 @@ function Get-MailboxFolderPermissionInventory {
     #Non-default folders created by Outlook or other mail programs. Folder NAMES, not types!
     #Exclude SearchDiscoveryHoldsFolder and SearchDiscoveryHoldsUnindexedItemFolder as they're not marked as default folders
     $excludedfolders = @("News Feed","Quick Step Settings","Social Activity Notifications","Suggested Contacts", "SearchDiscoveryHoldsUnindexedItemFolder", "SearchDiscoveryHoldsFolder","Calendar Logging") #Exclude "Calendar Logging" on older Exchange versions
-    
+
     #Initialize the variable used to designate mailbox types, based on the input parameters
     $included = @()
     if($IncludeSharedMailboxes) { $included += "SharedMailbox"}
     if($IncludeRoomMailboxes) { $included += "RoomMailbox"; $included += "EquipmentMailbox"}
     #if no parameters specified, return only User mailboxes
     if($IncludeUserMailboxes -or !$included) { $included += "UserMailbox"}
-        
+
     #Confirm connectivity to Exchange Online
     try { $session = Get-PSSession -InstanceId (Get-OrganizationConfig).RunspaceId.Guid -ErrorAction Stop  }
     catch { Write-Error "No active Exchange Online session detected, please connect to ExO first: https://technet.microsoft.com/en-us/library/jj984289(v=exchg.160).aspx" -ErrorAction Stop }
@@ -76,7 +76,7 @@ function Get-MailboxFolderPermissionInventory {
     else {
         $MBList = Invoke-Command -Session $session -ScriptBlock { Get-Mailbox -ResultSize Unlimited -RecipientTypeDetails $Using:included | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails } -HideComputerName
     }
-    
+
     #If no mailboxes are returned from the above cmdlet, stop the script and inform the user
     if (!$MBList) { Write-Error "No mailboxes of the specifyied types were found, specify different criteria." -ErrorAction Stop}
 
@@ -107,7 +107,7 @@ function Get-MailboxFolderPermissionInventory {
             #Get the folder permissions
             if ($folder.FolderType -eq "Root") { $MBrights = Invoke-Command -Session $session -ScriptBlock { Get-MailboxFolderPermission -Identity $using:MBSMTP } -HideComputerName }
             else { $MBrights = Invoke-Command -Session $session -ScriptBlock { Get-MailboxFolderPermission -Identity $using:foldername } -HideComputerName }
-            
+
             #Exclude default folders and users as per the parameters passed to the script
             if (!$IncludeDefaultPermissions) { $MBrights = $MBrights | ? {$_.User.DisplayName -notin @("Default","Anonymous","Owner@local","Member@local")}}
             if ($ExcludeUsers) { $MBrights = $MBrights | ? {$_.User.ADRecipient.PrimarySmtpAddress.ToString() -notin $ExcludeUsers}}
@@ -161,7 +161,7 @@ function Get-MailboxFolderPermissionInventory {
                     elseif ($entry.User.UserType.ToString() -eq "External") { $varUser = $entry.User.RecipientPrincipal.PrimarySmtpAddress.Replace("ExchangePublishedUser.",$null); $varType = "External" }
                     elseif ($entry.User.UserType.ToString() -eq "Unknown") { $varUser = $entry.User.DisplayName; $varType = "Orphaned" }
                     else { continue }
-                    
+
                     Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "User" -Value $varUser
                     Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Permissions" -Value $($entry.AccessRights -join ";")
                     Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Permission Type" -Value $varType
@@ -171,7 +171,7 @@ function Get-MailboxFolderPermissionInventory {
                     #$objPermissions | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd'))_MailboxFolderPermissions.csv" -Append -NoTypeInformation -Encoding UTF8 -UseCulture
                 }}
             }
-        }  
+        }
     #Output the result to the console host. Rearrange/sort as needed.
     $arrPermissions | select * -ExcludeProperty Number,PSComputerName,RunspaceId,PSShowComputerName
 }

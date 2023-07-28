@@ -28,8 +28,8 @@ $body = @{
 
 #Obtain the token
 Write-Verbose "Authenticating..."
-try { 
-    $tokenRequest = Invoke-WebRequest -Method Post -Uri $url -ContentType "application/x-www-form-urlencoded" -Body $body -UseBasicParsing -ErrorAction Stop 
+try {
+    $tokenRequest = Invoke-WebRequest -Method Post -Uri $url -ContentType "application/x-www-form-urlencoded" -Body $body -UseBasicParsing -ErrorAction Stop
     $token = ($tokenRequest.Content | ConvertFrom-Json).access_token
 
     $authHeader = @{

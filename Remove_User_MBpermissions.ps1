@@ -4,6 +4,7 @@ Param([ValidateNotNullOrEmpty()][Alias("UserToRemove")][String[]]$Identity,[swit
 
 function Check-Connectivity {
     [cmdletbinding()]
+    [OutputType([bool])]
     param()
 
     #Make sure we are connected to Exchange Remote PowerShell
@@ -11,10 +12,10 @@ function Check-Connectivity {
     if (!$session -or ($session.State -ne "Opened")) {
         try { $script:session = Get-PSSession -InstanceId (Get-AcceptedDomain | select -First 1).RunspaceId.Guid -ErrorAction Stop  }
         catch {
-            try { 
-                $script:session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri https://outlook.office365.com/powershell-liveid/ -Credential (Get-Credential) -Authentication Basic -AllowRedirection -ErrorAction Stop 
-                Import-PSSession $session -ErrorAction Stop | Out-Null 
-            }  
+            try {
+                $script:session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri https://outlook.office365.com/powershell-liveid/ -Credential (Get-Credential) -Authentication Basic -AllowRedirection -ErrorAction Stop
+                Import-PSSession $session -ErrorAction Stop | Out-Null
+            }
             catch { Write-Error "No active Exchange Remote PowerShell session detected, please connect first. To connect to ExO: https://technet.microsoft.com/en-us/library/jj984289(v=exchg.160).aspx" -ErrorAction Stop }
         }
     }
@@ -27,7 +28,7 @@ function Remove-UserMBPermissions {
 .Synopsis
    Removes user's permissions across all mailboxes of the selected type(s)
 .DESCRIPTION
-   The Remove-UserMBPermissions function remove mailbox permissions for a given user, or a list of users, from all mailboxes in the organization. Mailbox types include User mailboxes, Shared mailboxes, Resource mailboxes. The command accepts pipeline input. 
+   The Remove-UserMBPermissions function remove mailbox permissions for a given user, or a list of users, from all mailboxes in the organization. Mailbox types include User mailboxes, Shared mailboxes, Resource mailboxes. The command accepts pipeline input.
 .PARAMETER Identity
     Identity the -Identity parameter to designate the list of users. Any valid Exchange user identifier can be specified. Multiple users can be specified in a comma-separated list or array, see examples below.
 .PARAMETER IncludeSharedMailboxes
@@ -53,7 +54,7 @@ function Remove-UserMBPermissions {
 
    C:\> "vasil","huku" | Remove-UserMBPermissions
 .INPUTS
-   User object 
+   User object
 .OUTPUTS
    None
 #>
@@ -112,21 +113,21 @@ This parameter accepts the following values:
             $mailboxes = .\Mailbox_Permissions_inventory.ps1 -IncludeUserMailboxes -IncludeSharedMailboxes:$IncludeSharedMailboxes -IncludeRoomMailboxes:$IncludeResourceMailboxes -Verbose:$VerbosePreference
             Write-Verbose "Obtained total of $($mailboxes.count) permission entries."
         }
-        catch { 
+        catch {
             Write-Error $_ -ErrorAction Continue
             Write-Verbose "Failed to obtain full mailbox permission inventory, using the stupid method instead..."
-            $mailboxes = $null 
+            $mailboxes = $null
     }}
 #endregion
 
 #region PROCESS
     $out = @()
-        
+
     #Needed to handle array values for the Identity parameter
     foreach ($user in $GUIDs.GetEnumerator()) {
         Write-Verbose "Processing user ""$($user.Name)""..."
         Start-Sleep -Milliseconds 80 #Add some delay to avoid throttling...
-            
+
         if (!$mailboxes -or $mailboxes.count -eq 0) {
             #Remove permissions the stupid way
             Write-Verbose "Removing mailbox permissions for user ""$($user.Name)""..."
@@ -137,12 +138,12 @@ This parameter accepts the following values:
             #As we are using the full mailbox permission inventory, filter out only the entries relevant to the current user
             $umailboxes = $mailboxes | ? {$_.User -eq $user.Value.UserPrincipalName -or $_.User.SecurityIdentifier.Value -eq $user.Value.Sid} #add Sid to cater for on-premises installs
             if (!$umailboxes -or $umailboxes.count -eq 0) { Write-Verbose "No matching permissions found for $($user.Name), skipping..." ; continue }
-            
+
             #cycle over each Mailbox
             foreach ($mailbox in $umailboxes) {
                 Write-Verbose "Removing permissions for user ""$($user.Name)"" from mailbox ""$($mailbox.'Mailbox address'.Address)"""
-                try { 
-                    Invoke-Command -Session $session -ScriptBlock { Remove-MailboxPermission -Identity $using:mailbox.'Mailbox address'.Address -User $using:user.Value.UserPrincipalName -AccessRights FullAccess -Confirm:$false -WhatIf:$using:WhatIfPreference -ErrorAction Stop } 
+                try {
+                    Invoke-Command -Session $session -ScriptBlock { Remove-MailboxPermission -Identity $using:mailbox.'Mailbox address'.Address -User $using:user.Value.UserPrincipalName -AccessRights FullAccess -Confirm:$false -WhatIf:$using:WhatIfPreference -ErrorAction Stop }
                     $outtemp = New-Object psobject -Property ([ordered]@{"Mailbox" = $mailbox.'Mailbox address'.Address;"AccessLevel" = "Full Access";"User" = $user.Value.UserPrincipalName})
                     $out += $outtemp; if (!$WhatIfPreference) { $outtemp } #Write output to the console unless we are using -WhatIf
                 }

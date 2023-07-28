@@ -6,10 +6,10 @@ function Check-Connectivity {
     if (!$session -or ($session.State -ne "Opened")) {
         try { $script:session = Get-PSSession -InstanceId (Get-AcceptedDomain | select -First 1).RunspaceId.Guid -ErrorAction Stop  }
         catch {
-            try { 
-                $script:session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri https://outlook.office365.com/powershell-liveid/ -Credential (Get-Credential) -Authentication Basic -AllowRedirection -ErrorAction Stop 
-                Import-PSSession $session -ErrorAction Stop | Out-Null 
-            }  
+            try {
+                $script:session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri https://outlook.office365.com/powershell-liveid/ -Credential (Get-Credential) -Authentication Basic -AllowRedirection -ErrorAction Stop
+                Import-PSSession $session -ErrorAction Stop | Out-Null
+            }
             catch { Write-Error "No active Exchange Remote PowerShell session detected, please connect first. To connect to ExO: https://technet.microsoft.com/en-us/library/jj984289(v=exchg.160).aspx" -ErrorAction Stop }
         }
     }
@@ -43,11 +43,11 @@ function Get-DGMembershipInventory {
 #>
 
     [CmdletBinding()]
-    
+
     Param
     (
     #Specify whether to include user mailboxes in the result
-    [Switch]$IncludeUserMailboxes,    
+    [Switch]$IncludeUserMailboxes,
     #Specify whether to include Shared mailboxes in the result
     [Switch]$IncludeSharedMailboxes,
     #Specify whether to include Mail users in the result
@@ -66,7 +66,7 @@ function Get-DGMembershipInventory {
     if($IncludeMailUsers) { $included += "MailUser"}
     if($IncludeMailContacts) { $included += "MailContact"}
     if($IncludeGuestUsers) { $included += "GuestMailUser"}
-    
+
     #Check if we are connected to Exchange PowerShell
     if (!(Check-Connectivity)) { return }
 
@@ -80,7 +80,7 @@ function Get-DGMembershipInventory {
     else {
         $MBList = Invoke-Command -Session $session -ScriptBlock { Get-Recipient -ResultSize Unlimited -RecipientTypeDetails $Using:included | Select-Object -Property PrimarySmtpAddress,DistinguishedName,ExternalEmailAddress,ExternalDirectoryObjectId } -HideComputerName
     }
-    
+
     #If no users are returned from the above cmdlet, stop the script and inform the user
     if (!$MBList) { Write-Error "No users of the specifyied types were found, specify different criteria." -ErrorAction Stop }
 
@@ -88,7 +88,7 @@ function Get-DGMembershipInventory {
     $arrMembers = @(); $count = 1; $PercentComplete = 0;
 
     #cycle over each object from the list
-    foreach ($mailbox in $MBList) { 
+    foreach ($mailbox in $MBList) {
         #display a simple progress message
         $ActivityMessage = "Retrieving data for mailbox $($mailbox.PrimarySmtpAddress). Please wait..."
         $StatusMessage = ("Processing {0} of {1}: {2}" -f $count, @($MBList).count, $mailbox.DistinguishedName)
@@ -109,9 +109,9 @@ function Get-DGMembershipInventory {
         $objMembers = New-Object PSObject
         #$i++;Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Number" -Value $i
         #Add-Member -InputObject $objMembers -MemberType NoteProperty -Name "User" -Value $mailbox.UserPrincipalName #Not returned via Get-Recipient
-        if ($mailbox.PrimarySmtpAddress.Address) { Add-Member -InputObject $objMembers -MemberType NoteProperty -Name "Email" -Value $mailbox.PrimarySmtpAddress.ToString() } 
+        if ($mailbox.PrimarySmtpAddress.Address) { Add-Member -InputObject $objMembers -MemberType NoteProperty -Name "Email" -Value $mailbox.PrimarySmtpAddress.ToString() }
         elseif ($mailbox.ExternalEmailAddress) { Add-Member -InputObject $objMembers -MemberType NoteProperty -Name "Email" -Value $mailbox.ExternalEmailAddress.AddressString.ToString() }
-        else { Add-Member -InputObject $objMembers -MemberType NoteProperty -Name "Email" -Value $mailbox.ExternalDirectoryObjectId.ToString() } 
+        else { Add-Member -InputObject $objMembers -MemberType NoteProperty -Name "Email" -Value $mailbox.ExternalDirectoryObjectId.ToString() }
         Add-Member -InputObject $objMembers -MemberType NoteProperty -Name "Groups" -Value $($list.PrimarySmtpAddress -join ",")
         $arrMembers += $objMembers
     }

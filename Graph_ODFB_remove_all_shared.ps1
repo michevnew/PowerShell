@@ -23,7 +23,7 @@ function processChildren {
     [switch]$ExpandFolders,
     #Use the Depth parameter to specify the folder depth for expansion/inclusion of items.
     [int]$depth)
-  
+
     $URI = "$URI/children"
     $children = @()
     #fetch children, make sure to handle multiple pages
@@ -60,7 +60,7 @@ function processChildren {
         }
         else { continue }
     }
-    
+
     #Process Notebooks
     foreach ($notebook in $cNotebooks) {
         if ($notebook.shared) {
@@ -111,7 +111,7 @@ function processFolder {
 }
 
 function RemovePermissions {
-    
+
     Param(
     #Use the UserId parameter to provide an unique identifier for the user object.
     [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$UserId,
@@ -124,12 +124,12 @@ function RemovePermissions {
     $result = Invoke-WebRequest -Uri $uri -Verbose:$VerbosePreference -Headers $authHeader -ErrorAction Stop
     if ($result) { $permissions = ($result.content | ConvertFrom-Json).Value }
     else { continue }
-  
+
     foreach ($entry in $permissions) {
         if ($entry.inheritedFrom) { Write-Verbose "Skipping inherited permissions..." ; continue }
         Invoke-WebRequest -Method DELETE -Verbose:$VerbosePreference -Uri "$uri/$($entry.id)" -Headers $authHeader -ErrorAction Stop | Out-Null
     }
-    #check for sp. prefix on permission entries 
+    #check for sp. prefix on permission entries
     #SC admin permissions are skipped, not covered via the "shared" property
 }
 
@@ -193,7 +193,7 @@ else {
 $global:varODFBSharedItems = $Output | select Name,ItemType,ItemPath
 #$Output | select Name,ItemType,ItemPath | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_ODFBSharedItems.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
 if ($varODFBSharedItems) {
-    Write-Output "The following shared items were found and permissions removed where possible:" 
+    Write-Output "The following shared items were found and permissions removed where possible:"
     return $global:varODFBSharedItems
 }
 else { Write-Output "No shared items found for $user" }

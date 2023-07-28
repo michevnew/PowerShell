@@ -27,11 +27,11 @@ function Get-EmailAddressesInventory {
 #>
 
     [CmdletBinding()]
-    
+
     Param
     (
     #Specify whether to include User mailboxes in the result
-    [Switch]$IncludeUserMailboxes,    
+    [Switch]$IncludeUserMailboxes,
     #Specify whether to include Shared mailboxes in the result
     [Switch]$IncludeSharedMailboxes,
     #Specify whether to include Room and Equipment mailboxes in the result
@@ -53,7 +53,7 @@ function Get-EmailAddressesInventory {
     #Specify whether to include SPO aliases in the output
     [switch]$IncludeSPOAliases)
 
-    
+
     #Initialize the variable used to designate recipient types, based on the input parameters
     $included = @()
     if($IncludeSharedMailboxes) { $included += "SharedMailbox"}
@@ -62,7 +62,7 @@ function Get-EmailAddressesInventory {
     if($IncludeMailContacts) { $included += "MailContact"}
     if($IncludeGroupMailboxes) { $included += "GroupMailbox"}
     if($IncludeDGs) { $included += 'DynamicDistributionGroup', 'MailUniversalDistributionGroup', 'MailUniversalSecurityGroup', 'RoomList'}
-    
+
     #If no parameters specified, return only User mailboxes
     if($IncludeUserMailboxes -or !$included) { $included += "UserMailbox"}
     #Use the -IncludeAll parameter if you want to cover all recipient types, full list below
@@ -114,7 +114,7 @@ function Get-EmailAddressesInventory {
                 if (($entry.Prefix -eq "SIP" -or $entry.Prefix -eq "EUM") -and !($IncludeSIPAliases -or $IncludeAll)) { continue }
                 if ($entry.Prefix -eq "SPO" -and !($IncludeSPOAliases -or $IncludeAll)) { continue }
                 Add-Member -InputObject $objAliases -MemberType NoteProperty -Name "Aliases" -Value $entry.ProxyAddressString
-                
+
                 $arrAliases += $objAliases
             }
             #Handle External email address for Mail User/Mail Contact objects

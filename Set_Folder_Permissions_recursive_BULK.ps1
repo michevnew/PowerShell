@@ -35,7 +35,7 @@ function ReturnFolderList {
 .OUTPUTS
     Array with information about the mailbox folders.
 #>
-    
+
     param(
 	[Parameter(Mandatory=$true, ValueFromPipeline=$true)]$SMTPAddress,
 	[Parameter(Mandatory=$false)]$ParentFolderPath)
@@ -124,7 +124,7 @@ function Set-MailboxFolderPermissionsRecursive {
     }
     if (!$SMTPAddresses -or ($SMTPAddresses.Count -eq 0)) { Throw "No matching mailboxes found, check the parameter values." }
     Write-Verbose "The following list of mailboxes will be used: ""$($SMTPAddresses.Values -join ", ")"""
-    
+
     #Prepare the list of users (security principals)
     Write-Verbose "Parsing the User parameter..."
     $GUIDs = @{}
@@ -155,7 +155,7 @@ function Set-MailboxFolderPermissionsRecursive {
     Write-Verbose "List of folder NAMES that will be excluded: ""$($excludedfolders -join ", ")"""
 #endregion
 
-#region PROCESS   
+#region PROCESS
     $out = @()
     foreach ($smtp in $SMTPAddresses.Values) {#should be unique, if needed select/sort
         Write-Verbose "Processing mailbox ""$smtp""..."
@@ -166,7 +166,7 @@ function Set-MailboxFolderPermissionsRecursive {
         Write-Verbose "A total of $($folders.count) folders found for $($smtp)."
 
         if (!$folders) { Write-Verbose "No matching folders found for $($smtp), skipping..." ; continue }
-        
+
         #Cycle over each folder we are interested in
         foreach ($folder in $folders) {
             #"Fix" for folders with "/" characters, treat the Root folder separately
@@ -182,7 +182,7 @@ function Set-MailboxFolderPermissionsRecursive {
                     $out += $outtemp; if (!$Quiet -and !$WhatIfPreference) { "$outtemp" } #Write output to the console unless the -Quiet parameter is used
                 }
                 catch [System.Management.Automation.RemoteException] {
-                    if ($_.CategoryInfo.Reason -eq "UserAlreadyExistsInPermissionEntryException") { 
+                    if ($_.CategoryInfo.Reason -eq "UserAlreadyExistsInPermissionEntryException") {
                         if (!$Quiet) { Write-Host "WARNING: Existing permissions entry found on ""$foldername"" for principal ""$($u.Name)"", replacing with ""$permissions""." -ForegroundColor Yellow }
                         Invoke-Command -Session $session -ScriptBlock { Set-MailboxFolderPermission -Identity $Using:foldername -User $Using:u.Value -AccessRights $Using:permissions -WhatIf:$using:WhatIfPreference -WarningAction SilentlyContinue } -ErrorAction Stop -HideComputerName #Set- doesnt have any output, but we can suppress the Warnings
                         $outtemp = New-Object psobject -Property ([ordered]@{"Mailbox" = $smtp;"FolderName" = $folder.name;"User" = $u.Name;"AccessRights" = ($permissions -join ",")})
@@ -190,7 +190,7 @@ function Set-MailboxFolderPermissionsRecursive {
                     }
                     elseif ($_.CategoryInfo.Reason -eq "CannotChangePermissionsOnFolderException") { Write-Host "ERROR: Folder permissions for ""$foldername"" CANNOT be changed!" -ForegroundColor Red }
                     elseif ($_.CategoryInfo.Reason -eq "ManagementObjectNotFoundException") { Write-Host "ERROR: Folder ""$foldername"" not found, this should not happen..." -ForegroundColor Red }
-                    elseif ($_.CategoryInfo.Reason -eq "InvalidInternalUserIdException") { 
+                    elseif ($_.CategoryInfo.Reason -eq "InvalidInternalUserIdException") {
                         Write-Host "ERROR: ""$($u.Name)"" is not a valid security principal for folder-level permissions, removing from list..." -ForegroundColor Red
                         $GUIDs.Remove($u.Name)
                         if ($GUIDs.Count) { continue } else { Write-Verbose "No valid security principals for folder-level permissions remaining, exiting the script..." ; return $out | Out-Default }
@@ -200,7 +200,7 @@ function Set-MailboxFolderPermissionsRecursive {
                 }
                 catch {$_ | fl * -Force; continue} #catch-all for any unhandled errors
             }
-            
+
     }}
 #endregion
     if ($out) {
@@ -214,6 +214,6 @@ function Set-MailboxFolderPermissionsRecursive {
 
 #Invoke the Set-MailboxFolderPermissionsRecursive function and pass the command line parameters. Make sure the output is stored in a variable for reuse, even if not specified in the input!
 if ($PSBoundParameters.Count -and $PSBoundParameters.Keys -notmatch "WhatIf|Verbose|ErrorAction|ErrorVariable|Confirm|Debug|WarningAction|WarningVariable|InformationAction|InformationVariable|OutVariable|OutBuffer|PipelineVariable") {
-	Set-MailboxFolderPermissionsRecursive @PSBoundParameters -OutVariable global:varFolderPermissionsAdded 
+	Set-MailboxFolderPermissionsRecursive @PSBoundParameters -OutVariable global:varFolderPermissionsAdded
 }
 else { Write-Host "INFO: The script was run without parameters, consider dot-sourcing it instead." -ForegroundColor Cyan }

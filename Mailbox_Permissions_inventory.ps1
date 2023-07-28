@@ -25,11 +25,11 @@ function Get-MailboxPermissionInventory {
 #>
 
     [CmdletBinding()]
-    
+
     Param
     (
     #Specify whether to include user mailboxes in the result
-    [Switch]$IncludeUserMailboxes,    
+    [Switch]$IncludeUserMailboxes,
     #Specify whether to include Shared mailboxes in the result
     [Switch]$IncludeSharedMailboxes,
     #Specify whether to include Room and Equipment mailboxes in the result
@@ -41,15 +41,14 @@ function Get-MailboxPermissionInventory {
     #Specify whether to include every type of mailbox in the result
     [Switch]$IncludeAll)
 
-    
     #Initialize the variable used to designate recipient types, based on the script parameters
     $included = @()
     if($IncludeUserMailboxes) { $included += "UserMailbox"}
     if($IncludeSharedMailboxes) { $included += "SharedMailbox"}
     if($IncludeRoomMailboxes) { $included += "RoomMailbox"; $included += "EquipmentMailbox"}
     if($IncludeDiscoveryMailboxes) { $included += "DiscoveryMailbox"}
-    if($IncludeTeamMailboxes) { $included += "TeamMailbox"} 
-        
+    if($IncludeTeamMailboxes) { $included += "TeamMailbox"}
+
     #Confirm connectivity to Exchange Online
     try { $session = Get-PSSession -InstanceId (Get-AcceptedDomain | select -First 1).RunspaceId.Guid -ErrorAction Stop  }
     catch { Write-Error "No active Exchange Online session detected, please connect to ExO first: https://technet.microsoft.com/en-us/library/jj984289(v=exchg.160).aspx" -ErrorAction Stop }
@@ -62,7 +61,7 @@ function Get-MailboxPermissionInventory {
     else {
         $MBList = Invoke-Command -Session $session -ScriptBlock { Get-Mailbox -ResultSize Unlimited -RecipientTypeDetails $Using:included | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails }
     }
-    
+
     #If no mailboxes are returned from the above cmdlet, stop the script and inform the user
     if (!$MBList) { Write-Error "No mailboxes of the specified types were found, specify different criteria." -ErrorAction Stop}
 
@@ -93,10 +92,10 @@ function Get-MailboxPermissionInventory {
             Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Access Rights" -Value ($entry.AccessRights -join ",")
             #Uncomment if the script is failing due to connectivity issues, the line below will write the output to a CSV file for each individual permissions entry
             #$objPermissions | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd'))_MailboxPermissions.csv" -Append -NoTypeInformation
-            $arrPermissions += $objPermissions 
+            $arrPermissions += $objPermissions
         }
     }
-    
+
     #Output the result to the console host. Rearrange/sort as needed.
     #Maybe handle empty object?
     $arrPermissions | select User,'Mailbox address','Mailbox type','Access Rights'

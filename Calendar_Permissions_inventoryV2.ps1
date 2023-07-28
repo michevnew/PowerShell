@@ -28,11 +28,11 @@ function Get-CalendarPermissionInventory {
 #>
 
     [CmdletBinding()]
-    
+
     Param
     (
     #Specify whether to include user mailboxes in the result
-    [Switch]$IncludeUserMailboxes,    
+    [Switch]$IncludeUserMailboxes,
     #Specify whether to include Shared mailboxes in the result
     [Switch]$IncludeSharedMailboxes,
     #Specify whether to include Room, Equipment and Booking mailboxes in the result
@@ -40,7 +40,6 @@ function Get-CalendarPermissionInventory {
     #Specify whether to return all mailbox types
     [Switch]$IncludeAll)
 
-    
     #Initialize the variable used to designate mailbox types, based on the input parameters
     $included = @()
     if($IncludeSharedMailboxes) { $included += "SharedMailbox"}
@@ -50,8 +49,8 @@ function Get-CalendarPermissionInventory {
 
     #Make sure we have a V2 version of the module
     try { Get-Command Get-EXOMailbox -ErrorAction Stop | Out-Null }
-    catch { "This script requires the Exchange Online V2 PowerShell module. Learn more about it here: https://docs.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2?view=exchange-ps#install-and-maintain-the-exo-v2-module" } 
-    
+    catch { Write-Error "This script requires the Exchange Online V2 PowerShell module. Learn more about it here: https://docs.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2?view=exchange-ps#install-and-maintain-the-exo-v2-module" -ErrorAction Stop }
+
     #Confirm connectivity to Exchange Online
     try { Get-EXOMailbox -ResultSize 1 -ErrorAction Stop | Out-Null }
     catch {
@@ -66,7 +65,7 @@ function Get-CalendarPermissionInventory {
     else {
         $MBList = Get-ExOMailbox -ResultSize Unlimited -RecipientTypeDetails $included | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails
     }
-    
+
     #If no mailboxes are returned from the above cmdlet, stop the script and inform the user
     if (!$MBList) { Write-Error "No mailboxes of the specified types were found, specify different criteria." -ErrorAction Stop }
 
@@ -74,7 +73,7 @@ function Get-CalendarPermissionInventory {
     $arrPermissions = @()
     $count = 1; $PercentComplete = 0;
     foreach ($MB in $MBList) {
-        
+
         #Progress message
         $ActivityMessage = "Retrieving data for mailbox $($MB.Identity). Please wait..."
         $StatusMessage = ("Processing mailbox {0} of {1}: {2}" -f $count, @($MBList).count, $MB.PrimarySmtpAddress.ToString())
@@ -103,7 +102,7 @@ function Get-CalendarPermissionInventory {
             elseif ($entry.User.UserType.ToString() -eq "External") { $varUser = $entry.User.UserPrincipalName.Replace("ExchangePublishedUser.",$null); $varType = "External" }
             elseif ($entry.User.UserType.ToString() -eq "Unknown") { $varUser = $entry.User.DisplayName; $varType = "Orphaned" }
             else { continue }
-                    
+
             Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "User" -Value $varUser
             Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Permissions" -Value $($entry.AccessRights -join ";")
             Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Permission Type" -Value $varType
@@ -117,5 +116,5 @@ function Get-CalendarPermissionInventory {
 }
 
 #Invoke the Get-CalendarPermissionInventory function and pass the command line parameters. Make sure the output is stored in a variable for reuse, even if not specified in the input!
-Get-CalendarPermissionInventory @PSBoundParameters -OutVariable global:varPermissions 
+Get-CalendarPermissionInventory @PSBoundParameters -OutVariable global:varPermissions
 $varPermissions | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_CalendarPermissions.csv" -NoTypeInformation -Encoding UTF8 -UseCulture

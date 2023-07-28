@@ -27,7 +27,7 @@ if ($IncludePIMEligibleAssignments) {
 
 if (!$roles) { Write-Verbose "No valid role assignments found, verify the required permissions have been granted?"}
 
-Write-Verbose "A total of $($roles.count) role assignments were found, of which $(($roles | ? {$_.directoryScopeId -eq "/"}).Count) are tenant-wide and $(($roles | ? {$_.directoryScopeId -ne "/"}).Count) are AU-scoped. $(($roles | ? {!$_.status}).Count) roles are permanently assigned, you might want to address that!" 
+Write-Verbose "A total of $($roles.count) role assignments were found, of which $(($roles | ? {$_.directoryScopeId -eq "/"}).Count) are tenant-wide and $(($roles | ? {$_.directoryScopeId -ne "/"}).Count) are AU-scoped. $(($roles | ? {!$_.status}).Count) roles are permanently assigned, you might want to address that!"
 #endregion Roles
 
 #region Output

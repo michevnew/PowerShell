@@ -28,11 +28,11 @@ function Get-MailboxPermissionInventory {
 #>
 
     [CmdletBinding()]
-    
+
     Param
     (
     #Specify whether to include user mailboxes in the result
-    [Switch]$IncludeUserMailboxes,    
+    [Switch]$IncludeUserMailboxes,
     #Specify whether to include Shared mailboxes in the result
     [Switch]$IncludeSharedMailboxes,
     #Specify whether to include Room, Equipment and Booking mailboxes in the result
@@ -42,17 +42,16 @@ function Get-MailboxPermissionInventory {
     #Specify whether to include every type of mailbox in the result
     [Switch]$IncludeAll)
 
-    
     #Initialize the variable used to designate recipient types, based on the script parameters
     $included = @()
     if ($IncludeUserMailboxes) { $included += "UserMailbox"}
     if ($IncludeSharedMailboxes) { $included += "SharedMailbox"}
     if ($IncludeRoomMailboxes) { $included += "RoomMailbox"; $included += "EquipmentMailbox"; $included += "SchedulingMailbox"}
-        
+
     #Make sure we have a V2 version of the module
     try { Get-Command Get-EXOMailbox -ErrorAction Stop | Out-Null }
-    catch { "This script requires the Exchange Online V2 PowerShell module. Learn more about it here: https://docs.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2?view=exchange-ps#install-and-maintain-the-exo-v2-module" } 
-    
+    catch { Write-Error "This script requires the Exchange Online V2 PowerShell module. Learn more about it here: https://docs.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2?view=exchange-ps#install-and-maintain-the-exo-v2-module" -ErrorAction Stop}
+
     #Confirm connectivity to Exchange Online
     try { Get-EXOMailbox -ResultSize 1 -ErrorAction Stop | Out-Null }
     catch {
@@ -67,9 +66,9 @@ function Get-MailboxPermissionInventory {
     }
     else {
         $MBList = Get-ExOMailbox -ResultSize Unlimited -RecipientTypeDetails $included | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails
-        if ($IncludeSoftDeleted) { $MBList += Get-ExOMailbox -SoftDeletedMailbox -ResultSize Unlimited -RecipientTypeDetails $included | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails } 
+        if ($IncludeSoftDeleted) { $MBList += Get-ExOMailbox -SoftDeletedMailbox -ResultSize Unlimited -RecipientTypeDetails $included | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails }
     }
-    
+
     #If no mailboxes are returned from the above cmdlet, stop the script and inform the user
     if (!$MBList) { Write-Error "No mailboxes of the specified types were found, specify different criteria." -ErrorAction Stop}
 
@@ -100,10 +99,10 @@ function Get-MailboxPermissionInventory {
             Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Is soft-deleted" -Value (& {If($MB.Identity -match "Soft Deleted Objects\\") {"True"} else {"False"}})
             Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Access Rights" -Value ($entry.AccessRights -join ",")
 
-            $arrPermissions += $objPermissions 
+            $arrPermissions += $objPermissions
         }
     }
-    
+
     #Output the result to the console host. Rearrange/sort as needed.
 
     if ($arrPermissions) { return ($arrPermissions | select * -ExcludeProperty Number) }

@@ -1,14 +1,14 @@
 #Helper function for loading the mailbox data. If no existing CSV file is found or it is outdated, the function will generate a new file (might take some time)...
 function Load-MailboxMatchInputFile {
     $importCSV = Get-ChildItem -Path $PSScriptRoot -Filter "*MailboxReport.csv" | sort LastWriteTime -Descending | select -First 1 #| select -ExpandProperty FullName
- 
+
     if (!$importCSV -or $importCSV.LastWriteTime -le (Get-Date).AddDays(-30)) {
         #No CSV file detected or it's too old, generate new mailbox report
         Write-Host "No Mailbox report file detected, or it's too old. Generating new report file..." -ForegroundColor Yellow
-        
+
         try { $session = Get-PSSession -InstanceId (Get-AcceptedDomain | select -First 1).RunspaceId.Guid -ErrorAction Stop }
         catch { Write-Error "No active Exchange Online session detected, please connect to ExO first: https://technet.microsoft.com/en-us/library/jj984289(v=exchg.160).aspx" -ErrorAction Stop }
-        
+
         #ONLY User mailboxes are included, add other types as needed. Add other properties as needed.
         $toImport = Invoke-Command -Session $session -ScriptBlock { Get-Mailbox -ResultSize Unlimited -RecipientTypeDetails UserMailbox | Select-Object DisplayName,Alias,UserPrincipalName,DistinguishedName,PrimarySmtpAddress } -HideComputerName | select * -ExcludeProperty RunspaceId
         $toImport | Export-Csv -Path "$PSScriptRoot\$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_MailboxReport.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
@@ -36,7 +36,7 @@ function Get-MailboxMatch {
     [CmdletBinding()]
 
     Param([parameter(Position=0, Mandatory=$true)][String]$dn)
-    
+
     if (!$mailboxes) { Load-MailboxMatchInputFile }
     return $mailboxes[$dn]
 }
@@ -72,12 +72,12 @@ foreach ($device in $MobileDevices) {
         $session = Get-PSSession -InstanceId (Get-AcceptedDomain | select -First 1).RunspaceId.Guid -ErrorAction Stop
         Start-Sleep -Seconds 1
         }
-    
+
     #Get additional properties from Get-MobileDeviceStatistics. If you dont need those, comment the below lines to greatly speed up the script. If you need additional properties, add them to the list below.
     $devicestats = Invoke-Command -Session $session -ScriptBlock { Get-MobileDeviceStatistics $using:device.DistinguishedName | Select-Object LastSuccessSync,Status,DevicePolicyApplied,DevicePolicyApplicationStatus } -HideComputerName -ErrorAction SilentlyContinue
 
     if ($devicestats) {
-        $device | Add-Member -MemberType NoteProperty -Name LastSuccessSync -Value (&{If($devicestats.LastSuccessSync) {$devicestats.LastSuccessSync.ToString()} Else {"Never"}}) 
+        $device | Add-Member -MemberType NoteProperty -Name LastSuccessSync -Value (&{If($devicestats.LastSuccessSync) {$devicestats.LastSuccessSync.ToString()} Else {"Never"}})
         $device | Add-Member -MemberType NoteProperty -Name Status -Value $devicestats.Status.Value
         $device | Add-Member -MemberType NoteProperty -Name DevicePolicyApplied -Value $devicestats.DevicePolicyApplied.Name
         $device | Add-Member -MemberType NoteProperty -Name DevicePolicyApplicationStatus -Value $devicestats.DevicePolicyApplicationStatus.Value

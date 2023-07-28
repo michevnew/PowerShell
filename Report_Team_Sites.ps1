@@ -10,7 +10,7 @@ $body = @{
     client_secret = $app_cred.GetNetworkCredential().Password
     grant_type    = "client_credentials"
 }
- 
+
 try { $tokenRequest = Invoke-WebRequest -Method Post -Uri "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token" -ContentType "application/x-www-form-urlencoded" -Body $body -UseBasicParsing -ErrorAction Stop }
 catch { Write-Host "Unable to obtain access token, aborting..."; return }
 
@@ -27,7 +27,7 @@ try {
 }
 catch { Write-Host "Unable to connect to SharePoint Online, aborting..."; return }
 
-$Report = @();$ErrorSites = 0;$count = 1
+$Report = @();$count = 1
 Foreach ($Site in $Sites) {
     #Progress message
     $ActivityMessage = "Retrieving data for site $($Site.Title). Please wait..."
@@ -92,7 +92,7 @@ Foreach ($Site in $Sites) {
         $objSite | Add-Member -MemberType NoteProperty -Name "Guests" -Value $guests
         $objSite | Add-Member -MemberType NoteProperty -Name "TeamEnabled" -Value $TeamsEnabled
     }
-    $objSite | Add-Member -MemberType NoteProperty -Name "Error" -Value (&{If(!$O365Group) {"Failed to find Office 365 Group for site: $($Site.Title) ($GroupId)"} Else {""}}) 
+    $objSite | Add-Member -MemberType NoteProperty -Name "Error" -Value (&{If(!$O365Group) {"Failed to find Office 365 Group for site: $($Site.Title) ($GroupId)"} Else {""}})
     $Report += $objSite
 }
 

@@ -9,8 +9,8 @@ function Check-Connectivity {
 
     #Make sure we have a V2 version of the module
     try { Get-Command Get-EXOMailbox -ErrorAction Stop | Out-Null }
-    catch { Write-Error "This script requires the Exchange Online V2/V3 PowerShell module. Learn more about it here: https://docs.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2?view=exchange-ps#install-and-maintain-the-exo-v2-module"; return $false } 
-    
+    catch { Write-Error "This script requires the Exchange Online V2/V3 PowerShell module. Learn more about it here: https://docs.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2?view=exchange-ps#install-and-maintain-the-exo-v2-module"; return $false }
+
     #Confirm connectivity to Exchange Online
     try { Get-EXOMailbox -ResultSize 1 -ErrorAction Stop | Out-Null }
     catch {
@@ -47,7 +47,7 @@ function Get-DGMembershipInventory {
 #>
 
     [CmdletBinding()]
-    
+
     Param
     (
     #Specify whether to include user mailboxes in the result
@@ -76,7 +76,7 @@ function Get-DGMembershipInventory {
     if($IncludeMailContacts) { $included += "MailContact" }
     if($IncludeGuestUsers) { $included += "GuestMailUser" }
     #if($IncludeUsers) { $included += "User" } #not needed, will mess up the array, separate check below
-    
+
     #Check if we are connected to Exchange PowerShell
     if (!(Check-Connectivity)) { return }
 
@@ -88,7 +88,7 @@ function Get-DGMembershipInventory {
     if ($IncludeUsers -or $IncludeAll) {
         $MBList += Get-User -ResultSize Unlimited -RecipientTypeDetails User | Select-Object -Property $props
     }
-    
+
     #Cover the rest of the recipient types
     if ($IncludeAll) {
         $MBList += Get-Recipient -ResultSize Unlimited -RecipientTypeDetails UserMailbox,SharedMailbox,RoomMailbox,EquipmentMailbox,SchedulingMailbox,MailUser,MailContact,GuestMailUser | Select-Object -Property $props
@@ -99,7 +99,7 @@ function Get-DGMembershipInventory {
     else {
         $MBList += Get-Recipient -ResultSize Unlimited -RecipientTypeDetails $included | Select-Object -Property $props
     }
-    
+
     #If no users are returned from the above cmdlet, stop the script and inform the user
     if (!$MBList) { Write-Error "No users of the specifyied types were found, specify different criteria." -ErrorAction Stop }
 
@@ -107,7 +107,7 @@ function Get-DGMembershipInventory {
     $arrMembers = @(); $count = 1; $PercentComplete = 0;
 
     #cycle over each object from the list
-    foreach ($mailbox in $MBList) { 
+    foreach ($mailbox in $MBList) {
         #Display a simple progress message
         $ActivityMessage = "Retrieving data for mailbox $($mailbox.PrimarySmtpAddress). Please wait..."
         $StatusMessage = ("Processing {0} of {1}: {2}" -f $count, @($MBList).count, $mailbox.DistinguishedName)

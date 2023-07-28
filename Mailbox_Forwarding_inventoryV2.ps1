@@ -30,7 +30,7 @@ function Get-MailboxForwardingInventory {
 #>
 
     [CmdletBinding()]
-    
+
     Param
     (
     #Specify whether to check Inbox rules for forwarding
@@ -42,7 +42,7 @@ function Get-MailboxForwardingInventory {
     #Specify whether to check tenant-wide forwarding controls
     [Switch]$CheckTenantControls,
     #Specify whether to include user mailboxes in the result
-    [Switch]$IncludeUserMailboxes,    
+    [Switch]$IncludeUserMailboxes,
     #Specify whether to include Shared mailboxes in the result
     [Switch]$IncludeSharedMailboxes,
     #Specify whether to include Room, Equipment and Booking mailboxes in the result
@@ -50,7 +50,6 @@ function Get-MailboxForwardingInventory {
     #Specify whether to include every type of mailbox in the result
     [Switch]$IncludeAll)
 
-    
     #Initialize the variable used to designate recipient types, based on the script parameters
     $included = @()
     if($IncludeUserMailboxes) { $included += "UserMailbox" }
@@ -69,7 +68,7 @@ function Get-MailboxForwardingInventory {
         Write-Verbose "Processing Tenant's forwarding controls..."
 
         #Check for Enabled flag? Though it returns False for the Default policy...
-        $varOutboundPolicy = Get-HostedOutboundSpamFilterPolicy | ? { $_.AutoForwardingMode -eq "On"} | select Name,IsDefault,Enabled,AutoForwardingMode 
+        $varOutboundPolicy = Get-HostedOutboundSpamFilterPolicy | ? { $_.AutoForwardingMode -eq "On"} | select Name,IsDefault,Enabled,AutoForwardingMode
         if ($varOutboundPolicy) { #at least one policy has external forwarding allowed
             Write-Host "ATTENTION: External forwarding is allowed in the following Outbound spam filter policies:" -ForegroundColor Red
             Write-Host ($varOutboundPolicy.Name -join ",") -ForegroundColor Red
@@ -96,7 +95,7 @@ function Get-MailboxForwardingInventory {
     #Filterable, but if we are going to include all the methods, we need to cycle all mailboxes anyway
     if (!$CheckInboxRules -and !$CheckCalendarDelegates) { $MBList = Get-EXOMailbox -Filter {ForwardingSmtpAddress -ne $null -or ForwardingAddress -ne $null} -ResultSize Unlimited -RecipientTypeDetails $included -Properties ForwardingAddress,ForwardingSMTPAddress,DeliverToMailboxAndForward }
     else { $MBList = Get-ExOMailbox -ResultSize Unlimited -RecipientTypeDetails $included -Properties ForwardingAddress,ForwardingSMTPAddress,DeliverToMailboxAndForward }
-  
+
     #If no mailboxes are returned from the above cmdlet, inform the user. Still cover Transport rules, so don't exist the script
     if (!$MBList) { Write-Error "No matching mailboxes found, specify different criteria." -ErrorAction Continue } #continue, as we might still need to cover Transport rules?
 
@@ -111,8 +110,8 @@ function Get-MailboxForwardingInventory {
         $PercentComplete = ($count / @($MBList).count * 100)
         Write-Progress -Activity $ActivityMessage -Status $StatusMessage -PercentComplete $PercentComplete -Verbose
         $count++
-                
-        #Gather forwarding configuration for each mailbox. 
+
+        #Gather forwarding configuration for each mailbox.
         if ($MB.ForwardingAddress -or $MB.ForwardingSmtpAddress) {
             #Prepare the output object
             $objForwarding = New-Object PSObject
@@ -122,7 +121,7 @@ function Get-MailboxForwardingInventory {
             Add-Member -InputObject $objForwarding -MemberType NoteProperty -Name "Keep original message" -Value (&{If($MB.DeliverToMailboxAndForward) {"True"} Else {"False"}})
             Add-Member -InputObject $objForwarding -MemberType NoteProperty -Name "Mailbox address" -Value $MB.PrimarySmtpAddress
             Add-Member -InputObject $objForwarding -MemberType NoteProperty -Name "Mailbox type" -Value $MB.RecipientTypeDetails
-            $arrForwarding += $objForwarding 
+            $arrForwarding += $objForwarding
         }
 
         #check for Inbox rules

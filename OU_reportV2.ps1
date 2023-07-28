@@ -4,7 +4,7 @@
 #For details on what the script does and how to run it, check: https://www.michev.info/blog/post/5716/reporting-on-synchronized-users-ou-via-the-graph-sdk-for-powershell
 
 Write-Verbose "Checking connectivity to Graph PowerShell..."
-try { 
+try {
     if (!(Get-MgContext) -or !((Get-MgContext).Scopes.Contains("User.Read.All"))) {
         Write-Verbose "Not connected to the Microsoft Graph or the required permissions are missing!"
         Connect-MgGraph -Scopes User.Read.All -ErrorAction Stop | Out-Null #Directory.Read.All

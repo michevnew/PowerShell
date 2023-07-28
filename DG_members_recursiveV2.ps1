@@ -11,7 +11,7 @@ function Check-Connectivity {
 
     #Check via Get-ConnectionInformation first
     if (Get-ConnectionInformation) { return $true } #REMOVE ALL OTHER CHECKS?
-   
+
     #Confirm connectivity to Exchange Online
     try { Get-EXORecipient -ResultSize 1 -ErrorAction Stop | Out-Null }
     catch {
@@ -49,8 +49,8 @@ function Get-GroupMemberRecursive {
     Distribution group identifier
 .OUTPUTS
     Array with basic information about the group and list of all members.
-#>    
-    
+#>
+
     [CmdletBinding()]
 
     Param(
@@ -70,7 +70,7 @@ function Get-GroupMemberRecursive {
     #Get the group object. If additional properties of the group are required, make sure to add them to the script block!
     try { $DG = Get-EXORecipient -Identity $Identity -RecipientTypeDetails MailUniversalDistributionGroup,DynamicDistributionGroup,MailUniversalSecurityGroup,GroupMailbox -ErrorAction Stop -Properties Guid | Select-Object -Property Name,PrimarySmtpAddress,Guid,RecipientTypeDetails }
     catch { Throw "Group $Identity not found" }
-    
+
     #Prepare the output object.
     $members = New-Object System.Collections.ArrayList
     #Use the hash table to prevent infinite looping in Get-Membership. This is the only reason we're using a separate funciton.
@@ -84,7 +84,7 @@ function Get-GroupMemberRecursive {
 
     #Make sure we return an unique-valued identifier for each member.
     $members = $members | select @{n="Identifier";e={if ($_.PrimarySmtpAddress) { $_.PrimarySmtpAddress } else {$_.UserPrincipalName}}}
-    #$members | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_MembershipReport_$($DG.Name).csv" -NoTypeInformation -Encoding UTF8 -UseCulture 
+    #$members | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_MembershipReport_$($DG.Name).csv" -NoTypeInformation -Encoding UTF8 -UseCulture
     return $members
 }
 
@@ -106,22 +106,22 @@ function Get-Membership {
     Write-Verbose "Processing group $($group.Name) of type $($group.RecipientTypeDetails) ..."
     #MemberOfGroup filter is not supported for Get-EXORecipient, so we have to use non-REST cmdlets :/
     if ($group.RecipientTypeDetails -eq "GroupMailbox") { $list = Get-UnifiedGroupLinks -Identity $Group.PrimarySmtpAddress -ResultSize Unlimited -LinkType Member | Select-Object -Property Name,WindowsLiveID,UserPrincipalName,PrimarySmtpAddress,Guid,RecipientTypeDetails,ExternalEmailAddress,ExternalDirectoryObjectId }
-    elseif ($group.RecipientTypeDetails -eq "DynamicDistributionGroup") { 
+    elseif ($group.RecipientTypeDetails -eq "DynamicDistributionGroup") {
         $filter = (Get-DynamicDistributionGroup $group.PrimarySmtpAddress).RecipientFilter #Get-DynamicDistributionGroupMember instead?
         #here's another place where Get-EXORecipient fails... both with -RecipientPreviewFilter and -Filter. Use Get-Recipient instead.
         $list = Get-Recipient -RecipientPreviewFilter $filter -ResultSize Unlimited | Select-Object -Property Name,WindowsLiveID,UserPrincipalName,PrimarySmtpAddress,Guid,RecipientTypeDetails,ExternalEmailAddress,ExternalDirectoryObjectId
     }
     elseif ($group.RecipientTypeDetails -eq "RoomList") { Write-Verbose "Skipping group $($group.Name) of type RoomList"; continue } #Just in case
     elseif ($group.RecipientTypeDetails -eq "ExchangeSecurityGroup") { Write-Verbose "Skipping group $($group.Name) of type ExchangeSecurityGroup as those groups cannot be handled by Exchange cmdlets..."; continue }
-    else { $list = Get-DistributionGroupMember $Group.PrimarySmtpAddress -ResultSize Unlimited | Select-Object -Property Name,WindowsLiveID,UserPrincipalName,PrimarySmtpAddress,Guid,RecipientTypeDetails,ExternalEmailAddress,ExternalDirectoryObjectId } 
+    else { $list = Get-DistributionGroupMember $Group.PrimarySmtpAddress -ResultSize Unlimited | Select-Object -Property Name,WindowsLiveID,UserPrincipalName,PrimarySmtpAddress,Guid,RecipientTypeDetails,ExternalEmailAddress,ExternalDirectoryObjectId }
 
     #Loop over each member and process them accordingly...
     Write-Verbose "A total of $(&{If ($list) { ($list | measure).count} else {0}}) entries found, processing..."
     foreach ($l in $list) {
         Write-Verbose "Processig $($l.Name) ..."
         #Check whether we have already processed this object and if so, skip it.
-        if ($l.Guid.Guid -eq $group.Guid.Guid -or $processed.ContainsValue($l.Guid.Guid)) { Write-Verbose "Recusrion detected, aborting..."; continue } 
-        
+        if ($l.Guid.Guid -eq $group.Guid.Guid -or $processed.ContainsValue($l.Guid.Guid)) { Write-Verbose "Recusrion detected, aborting..."; continue }
+
         #If the object is not yet processed, and is of type Group, toggle the variable to signal presence of nested groups.
         if ($l.RecipientTypeDetails -match "Group") {
             $script:HasNestedGroups = $true
@@ -198,7 +198,7 @@ function Get-GroupMembershipReport {
 #>
 
     [CmdletBinding(DefaultParameterSetName='ByGroupType')]
-    
+
     Param
     (
     #Specify whether to include "regular" DGs in the result.
@@ -223,7 +223,7 @@ function Get-GroupMembershipReport {
     #Initialize the parameters
     if (!$RecursiveOutput -and $RecursiveOutputListGroups) {
         $RecursiveOutputListGroups = $false
-        Write-Verbose "The parameter -RecursiveOutputListGroups can only be used when the -RecursiveOutput is specified as well, ignoring..." 
+        Write-Verbose "The parameter -RecursiveOutputListGroups can only be used when the -RecursiveOutput is specified as well, ignoring..."
     }
 
     #Check if we are connected to Exchange Online PowerShell.
@@ -264,7 +264,7 @@ function Get-GroupMembershipReport {
             $Groups = Get-EXORecipient -ResultSize Unlimited -RecipientTypeDetails $included -ErrorAction SilentlyContinue -Properties ManagedBy | Select-Object -Property Name,PrimarySmtpAddress,RecipientTypeDetails,ManagedBy
         }
     }
-    
+
     #If no groups are returned from the above cmdlet, stop the script and inform the user.
     if (!$Groups) { Write-Error "No groups of the specifyied types were found, specify different criteria." -ErrorAction Stop }
     #endregion GroupList
@@ -300,7 +300,7 @@ function Get-GroupMembershipReport {
 
 	    $arrGroupData += $objProperties
     }
-    
+
     #Output the result to the console host. Rearrange/sort as needed.
     $arrGroupData | sort PrimarySmtpAddress
 }

@@ -4,7 +4,9 @@
 
 #Helper function for ExO connectivity
 function Check-Connectivity {
-    [cmdletbinding()]param()
+    [cmdletbinding()]
+    [OutputType([bool])]
+    param()
 
     #Make sure we are connected to Exchange Online PowerShell
     Write-Verbose "Checking connectivity to Exchange Online PowerShell..."
@@ -25,13 +27,13 @@ function Check-Connectivity {
 #Helper function for loading the mailbox data. If no existing CSV file is found or it is outdated, the function will generate a new file (might take some time)...
 function Load-MailboxMatchInputFile {
     $importCSV = Get-ChildItem -Path $PSScriptRoot -Filter "*MailboxReport.csv" | sort LastWriteTime -Descending | select -First 1 #| select -ExpandProperty FullName
- 
+
     if (!$importCSV -or $importCSV.LastWriteTime -le (Get-Date).AddDays(-30)) {
         #No CSV file detected or it's too old, generate new mailbox report
         Write-Host "No Mailbox report file detected, or it's too old. Generating new report file..." -ForegroundColor Yellow
-        
+
         if (!(Check-Connectivity)) { return }
-        
+
         #ONLY User mailboxes are included, add other types as needed. Add other properties as needed.
         $toImport = Get-EXOMailbox -ResultSize Unlimited -RecipientTypeDetails UserMailbox | Select-Object DisplayName,Alias,UserPrincipalName,DistinguishedName,PrimarySmtpAddress
         $toImport | Export-Csv -Path "$PSScriptRoot\$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_MailboxReport.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
@@ -57,7 +59,7 @@ function Get-MailboxMatch {
     [CmdletBinding()]
 
     Param([parameter(Position=0, Mandatory=$true)][String]$dn)
-    
+
     if (!$mailboxes) { Load-MailboxMatchInputFile }
     return $mailboxes[$dn]
 }
@@ -88,14 +90,14 @@ foreach ($device in $MobileDevices) {
     if ($count /100 -is [int]) {
         Start-Sleep -Seconds 1
     }
-    
+
     #Get additional properties from Get-EXOMobileDeviceStatistics. If you dont need those, comment the below lines to greatly speed up the script. If you need additional properties, add them to the list below.
     $deviceid = $device.OrganizationId.Split("-")[0].TrimEnd() + "/"+ $device.Identity.Replace("\","/")
     #You can use the Guid propery instead, however Get-EXOMobileDeviceStatistics is veeeeery slow with it :/
     $devicestats = Get-EXOMobileDeviceStatistics -Identity $deviceid | Select-Object LastSuccessSync,Status,DevicePolicyApplied,DevicePolicyApplicationStatus
 
     if ($devicestats) {
-        $device | Add-Member -MemberType NoteProperty -Name LastSuccessSync -Value (&{If($devicestats.LastSuccessSync) {$devicestats.LastSuccessSync} Else {"Never"}}) 
+        $device | Add-Member -MemberType NoteProperty -Name LastSuccessSync -Value (&{If($devicestats.LastSuccessSync) {$devicestats.LastSuccessSync} Else {"Never"}})
         $device | Add-Member -MemberType NoteProperty -Name Status -Value $devicestats.Status
         $device | Add-Member -MemberType NoteProperty -Name DevicePolicyApplied -Value $devicestats.DevicePolicyApplied
         $device | Add-Member -MemberType NoteProperty -Name DevicePolicyApplicationStatus -Value $devicestats.DevicePolicyApplicationStatus

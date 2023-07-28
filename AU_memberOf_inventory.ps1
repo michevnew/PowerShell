@@ -27,8 +27,8 @@ $body = @{
 
 #Obtain the token
 Write-Verbose "Authenticating..."
-try { 
-    $tokenRequest = Invoke-WebRequest -Method Post -Uri $url -ContentType "application/x-www-form-urlencoded" -Body $body -UseBasicParsing -ErrorAction Stop 
+try {
+    $tokenRequest = Invoke-WebRequest -Method Post -Uri $url -ContentType "application/x-www-form-urlencoded" -Body $body -UseBasicParsing -ErrorAction Stop
     $token = ($tokenRequest.Content | ConvertFrom-Json).access_token
 
     $authHeader = @{
@@ -79,7 +79,7 @@ else {
 #region AUs
 #Cycle over each user and fetch AU membership
 $output = [System.Collections.Generic.List[Object]]::new() #output variable
-$i=0; $count = 1; $PercentComplete = 0;
+$count = 1; $PercentComplete = 0;
 foreach ($u in $Users) {
     #Progress message
     $ActivityMessage = "Retrieving data for user $($u.userPrincipalName). Please wait..."

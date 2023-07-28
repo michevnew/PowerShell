@@ -28,7 +28,7 @@ function ReturnFolderList {
 .OUTPUTS
     Array with information about the mailbox folders.
 #>
-    
+
     param([Parameter(Mandatory=$true, ValueFromPipeline=$true)]$SMTPAddress)
 
     if (!$session -or ($session.State -ne "Opened")) { Write-Error "No active Exchange Remote PowerShell session detected, please connect first. To connect to ExO: https://technet.microsoft.com/en-us/library/jj984289(v=exchg.160).aspx" -ErrorAction Stop }
@@ -55,7 +55,7 @@ function GetFolderPermissions {
 .OUTPUTS
     Array with information about the mailbox folder permissions.
 #>
-    
+
     param([Parameter(Mandatory=$true, ValueFromPipeline=$true)]$foldername)
 
     if (!$session -or ($session.State -ne "Opened")) { Write-Error "No active Exchange Remote PowerShell session detected, please connect first. To connect to ExO: https://technet.microsoft.com/en-us/library/jj984289(v=exchg.160).aspx" -ErrorAction Stop }
@@ -132,17 +132,17 @@ function Reset-MailboxFolderPermissionsRecursive {
     Write-Verbose "List of folder NAMES that will be excluded: ""$($excludedfolders -join ", ")"""
 #endregion
 
-#region PROCESS   
+#region PROCESS
     $out = @()
     foreach ($smtp in $SMTPAddresses.Values) {
         Write-Verbose "Processing mailbox ""$smtp""..."
         Start-Sleep -Milliseconds 800 #Add some delay to avoid throttling...
-        
+
         Write-Verbose "Obtaining folder list for mailbox ""$smtp""..."
         $folders = ReturnFolderList $smtp
         Write-Verbose "A total of $($folders.count) folders found for $($smtp)."
         if (!$folders) { Write-Verbose "No matching folders found for $($smtp), skipping..." ; continue }
-        
+
         #Cycle over each folder we are interested in
         foreach ($folder in $folders) {
             #"Fix" for folders with "/" characters, treat the Root folder separately
@@ -153,7 +153,7 @@ function Reset-MailboxFolderPermissionsRecursive {
             $fPermissions = GetFolderPermissions $foldername
             if (!$ResetDefaultLevel) { $fPermissions = $fPermissions | ? {$_.UserName -notin @("Default","Anonymous","Owner@local","Member@local")}} #filter out default permissions
             if (!$fPermissions) { Write-Verbose "No permission entries found for $($foldername), skipping..." ; continue }
-            
+
             #Remove the folder permissions for each delegate
             foreach ($u in $fPermissions) {
                 if ($u.UserType -eq "Default") {#UserType enumeration https://docs.microsoft.com/en-us/previous-versions/office/developer/exchange-server-2010/ff319704(v%3Dexchg.140)
@@ -199,7 +199,7 @@ function Reset-MailboxFolderPermissionsRecursive {
                     catch {$_ | fl * -Force; continue} #catch-all for any unhandled errors
                 }
             }
-            
+
     }}
 #endregion
     if ($out) {

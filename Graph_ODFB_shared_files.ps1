@@ -20,7 +20,7 @@ function processChildren {
     [switch]$ExpandFolders,
     #Use the Depth parameter to specify the folder depth for expansion/inclusion of items.
     [int]$depth)
-  
+
     $URI = "$URI/children"
     $children = @()
     #fetch children, make sure to handle multiple pages
@@ -48,7 +48,7 @@ function processChildren {
     foreach ($file in $cFiles) {
         $output += (processFile -User $User -file $file -Verbose:$VerbosePreference)
     }
-    
+
     #Process Notebooks
     foreach ($notebook in $cNotebooks) {
         $output += (processFile -User $User -file $notebook -Verbose:$VerbosePreference)
@@ -79,7 +79,7 @@ function processFolder {
     #if the Shared property is set, fetch permissions
     if ($folder.shared) {
         $permlist = getPermissions $user.id $folder.id -Verbose:$VerbosePreference
-                        
+
         #Match user entries against the list of domains in the tenant to populate the ExternallyShared value
         $regexmatches = $permlist | % {if ($_ -match "\(?\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*\)?") {$Matches[0]}}
         if ($permlist -match "anonymous") { $fileinfo | Add-Member -MemberType NoteProperty -Name "ExternallyShared" -Value "Yes" }
@@ -119,10 +119,10 @@ function processFile {
     $fileinfo | Add-Member -MemberType NoteProperty -Name "ItemType" -Value (&{If($file.package.Type -eq "OneNote") {"Notebook"} Else {"File"}})
     $fileinfo | Add-Member -MemberType NoteProperty -Name "Shared" -Value (&{If($file.shared) {"Yes"} Else {"No"}})
 
-    #if the Shared property is set, fetch permissions    
+    #if the Shared property is set, fetch permissions
     if ($file.shared) {
         $permlist = getPermissions $user.id $file.id -Verbose:$VerbosePreference
-                        
+
         #Match user entries against the list of domains in the tenant to populate the ExternallyShared value
         $regexmatches = $permlist | % {if ($_ -match "\(?\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*\)?") {$Matches[0]}}
         if ($permlist -match "anonymous") { $fileinfo | Add-Member -MemberType NoteProperty -Name "ExternallyShared" -Value "Yes" }
@@ -140,7 +140,7 @@ function processFile {
 }
 
 function getPermissions {
-    
+
     Param(
     #Use the UserId parameter to provide an unique identifier for the user object.
     [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$UserId,
@@ -198,7 +198,7 @@ function Renew-Token {
         scope = $Scopes
     }
 
-    try { 
+    try {
         Set-Variable -Name authenticationResult -Scope Global -Value (Invoke-WebRequest -Method Post -Uri $url -Debug -Verbose -Body $body -ErrorAction Stop)
         $token = ($authenticationResult.Content | ConvertFrom-Json).access_token
     }
@@ -207,7 +207,7 @@ function Renew-Token {
     if (!$token) { Write-Host "Failed to aquire token!"; return }
     else {
         Write-Verbose "Successfully acquired Access Token"
-        
+
         #Use the access token to set the authentication header
         Set-Variable -Name authHeader -Scope Global -Value @{'Authorization'="Bearer $token";'Content-Type'='application\json'}
     }
@@ -220,9 +220,14 @@ function Invoke-GraphApiRequest {
 
     if (!$AuthHeader) { Write-Verbose "No access token found, aborting..."; throw }
 
-    try { $result = Invoke-WebRequest -Headers $AuthHeader -Uri $uri -Verbose:$VerbosePreference -ErrorAction Stop }    catch [System.Net.WebException] {        if ($_.Exception.Response -eq $null) { throw }
+    try { $result = Invoke-WebRequest -Headers $AuthHeader -Uri $uri -Verbose:$VerbosePreference -ErrorAction Stop }
+    catch [System.Net.WebException] {
+        if ($_.Exception.Response -eq $null) { throw }
 
-        #Get the full error response        $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())        $streamReader.BaseStream.Position = 0        $errResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+        #Get the full error response
+        $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+        $streamReader.BaseStream.Position = 0
+        $errResp = $streamReader.ReadToEnd() | ConvertFrom-Json
         $streamReader.Close()
 
         if ($errResp.error.code -match "ResourceNotFound|Request_ResourceNotFound") { Write-Verbose "Resource $uri not found, skipping..."; return } #404, continue
@@ -243,7 +248,7 @@ function Invoke-GraphApiRequest {
         else { $errResp ; throw }
     }
     catch { $_ ; return }
-    
+
     if ($result) {
         if ($result.Content) { ($result.Content | ConvertFrom-Json) }
         else { return $result }

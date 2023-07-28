@@ -43,7 +43,7 @@ function Get-O365GroupMembershipInventory {
     }
 
     #Get a list of all recipients that support ManagedBy/Owner attribute
-    $O365Groups = Invoke-Command -Session $session -ScriptBlock { Get-UnifiedGroup -ResultSize Unlimited | Select-Object -Property Displayname,PrimarySMTPAddress,ExternalDirectoryObjectId } -HideComputerName 
+    $O365Groups = Invoke-Command -Session $session -ScriptBlock { Get-UnifiedGroup -ResultSize Unlimited | Select-Object -Property Displayname,PrimarySMTPAddress,ExternalDirectoryObjectId } -HideComputerName
 
     #If no objects are returned from the above cmdlet, stop the script and inform the user
     if (!$O365Groups) { Write-Error "No Office 365 groups found" -ErrorAction Stop }

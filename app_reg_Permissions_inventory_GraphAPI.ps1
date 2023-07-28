@@ -21,7 +21,7 @@ function parse-AppPermissions {
                 if (!$entryValue) { $entryValue = "Orphaned ($($entry.id))" }
                 $OAuthpermA["[" + $resID + "]"] += "," + $entryValue
             }
-            elseif ($entry.Type -eq "Scope") { 
+            elseif ($entry.Type -eq "Scope") {
                 $entryValue = ($OAuthScopes[$appRoleAssignment.resourceAppId].publishedPermissionScopes | ? {$_.id -eq $entry.id}).Value
                 if (!$entryValue) { $entryValue = "Orphaned ($($entry.id))" }
                 $OAuthpermD["[" + $resID + "]"] += "," + $entryValue
@@ -56,7 +56,7 @@ function parse-Credential {
     #Return number of credentials
     $credout = ($cred.count).ToString()
     #Check if any there is an expired credential
-    if ((Get-Date) -gt ($cred.endDateTime | sort -Descending | select -First 1)) { $credout +=  " (expired)" } 
+    if ((Get-Date) -gt ($cred.endDateTime | sort -Descending | select -First 1)) { $credout +=  " (expired)" }
     else {}
     #Check for credentials with excessive validity
     foreach ($c in $cred) {
@@ -86,7 +86,7 @@ $body = @{
     scope = $Scopes
 }
 
-try { 
+try {
     $res = Invoke-WebRequest -Method Post -Uri $url -Verbose -Body $body
     $token = ($res.Content | ConvertFrom-Json).access_token
 
@@ -132,7 +132,7 @@ foreach ($App in $Apps) {
         "SignInAudience" = $app.signInAudience
         "ObjectId" = $App.id
         "Created on" = (&{if ($app.createdDateTime) {(Get-Date($App.createdDateTime) -format g)} else {"N/A"}})
-        #"Owner" = 
+        #"Owner" =
         "Permissions (application)" = $null
         "Permissions (delegate)" = $null
         "Permissions (API)" = $null

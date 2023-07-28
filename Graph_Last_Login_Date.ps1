@@ -10,7 +10,7 @@ $body = @{
     client_secret = $app_cred.GetNetworkCredential().Password
     grant_type    = "client_credentials"
 }
- 
+
 #simple code to get an access token, add your own handlers as needed
 try { $tokenRequest = Invoke-WebRequest -Method Post -Uri "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token" -ContentType "application/x-www-form-urlencoded" -Body $body -UseBasicParsing -ErrorAction Stop }
 catch { Write-Host "Unable to obtain access token, aborting..."; return }

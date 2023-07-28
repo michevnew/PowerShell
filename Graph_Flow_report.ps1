@@ -6,18 +6,18 @@ Add-Type -LiteralPath "C:\Program Files\PackageManagement\NuGet\Packages\Microso
 function Get-AccessTokens {
     $global:hashtokens = @{}
     $app =  [Microsoft.Identity.Client.PublicClientApplicationBuilder]::Create("1950a258-227b-4e31-a9cf-717495945fc2").WithRedirectUri("https://login.microsoftonline.com/common/oauth2/nativeclient").Build()
-    
-    $scopes = @("https://graph.microsoft.com/.default","https://service.flow.microsoft.com/.default","https://service.powerapps.com/.default")  
+
+    $scopes = @("https://graph.microsoft.com/.default","https://service.flow.microsoft.com/.default","https://service.powerapps.com/.default")
     foreach ($scope in $scopes) {
         $TokenScopes = New-Object System.Collections.Generic.List[string]
         $TokenScopes.Add($Scope)
-        
-        try {          
+
+        try {
             if ($hashTokens.Count) { $token = $app.AcquireTokenSilent($TokenScopes,$app.GetAccountsAsync().Result.Username).ExecuteAsync().Result }
             else { $token = $app.AcquireTokenInteractive($TokenScopes).ExecuteAsync().Result }
         }
         catch { $_; return }
-        
+
         if (!$token) { Write-Host "Failed to aquire token!"; return }
         else {
             Write-Verbose "Successfully acquired Access Token with scope $scope"
@@ -32,7 +32,7 @@ function Invoke-GraphApiRequest {
     )
 
     if (!$hashTokens) { Write-Verbose "No access token found, aborting..."; throw }
-    
+
     $authHeader = $null
     switch -Wildcard ($Uri) {
         "https://graph.microsoft.com/*" { $authHeader = @{'Authorization'="Bearer $($hashTokens['https://graph.microsoft.com/.default'])";'Content-Type'='application\json'} }
@@ -41,8 +41,14 @@ function Invoke-GraphApiRequest {
     }
 
     Write-Verbose "Processing request $Uri"
-    try { $result = Invoke-WebRequest -Headers $authHeader -Uri $uri -Verbose:$VerbosePreference -ErrorAction Stop }    catch [System.Net.WebException] {        if ($_.Exception.Response -eq $null) { throw }
-        #Get the full error response        $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())        $streamReader.BaseStream.Position = 0        $global:errResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+    try { $result = Invoke-WebRequest -Headers $authHeader -Uri $uri -Verbose:$VerbosePreference -ErrorAction Stop }
+    catch [System.Net.WebException] {
+        if ($_.Exception.Response -eq $null) { throw }
+
+        #Get the full error response
+        $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+        $streamReader.BaseStream.Position = 0
+        $global:errResp = $streamReader.ReadToEnd() | ConvertFrom-Json
         $streamReader.Close()
 
         if ($errResp.error.code -match "ResourceNotFound|Request_ResourceNotFound|FlowNotFound") { Write-Verbose "Resource $uri not found, skipping..."; return } #404, continue
@@ -63,7 +69,7 @@ function Invoke-GraphApiRequest {
         else { $errResp ; throw }
     }
     catch { $_ ; return }
-    
+
     if ($result) {
         if ($result.Content) { ($result.Content | ConvertFrom-Json) }
         else { return $result }

@@ -13,12 +13,8 @@ function GUIDtoIdentifier ([GUID]$GUID) {
         "ids" = @("$GUID")
     } | ConvertTo-Json
 
-    #$Json | Out-Default
-    
     $GObject = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/v1.0/directoryObjects/getByIds" -Method Post -Body $Json -ContentType "application/json"
     $result = ($GObject.Content | ConvertFrom-Json).Value
-
-    #$result | Out-Default
 
     switch ($result.'@odata.type') {
         "#microsoft.graph.user" { return $result.UserPrincipalName }
@@ -46,7 +42,7 @@ $body = @{
     client_secret = $app_cred.GetNetworkCredential().Password
     grant_type    = "client_credentials"
 }
- 
+
 #simple code to get an access token, add your own handlers as needed
 try { $tokenRequest = Invoke-WebRequest -Method Post -Uri "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token" -ContentType "application/x-www-form-urlencoded" -Body $body -UseBasicParsing -ErrorAction Stop }
 catch { Write-Host "Unable to obtain access token, aborting..."; return }
@@ -97,7 +93,7 @@ foreach ($r in $result) {
 
     #session controls
     if ($r.sessionControls) {
-        $CAinfo | Add-Member -MemberType NoteProperty -Name sesRestriction -Value (&{If($r.sessionControls.applicationEnforcedRestrictions.isEnabled) {"Enabled"} Else {"Not enabled"}}) 
+        $CAinfo | Add-Member -MemberType NoteProperty -Name sesRestriction -Value (&{If($r.sessionControls.applicationEnforcedRestrictions.isEnabled) {"Enabled"} Else {"Not enabled"}})
         $CAinfo | Add-Member -MemberType NoteProperty -Name sesMCAS -Value $r.sessionControls.cloudAppSecurity
         $CAinfo | Add-Member -MemberType NoteProperty -Name sesBrowser -Value $r.sessionControls.persistentBrowser
         $CAinfo | Add-Member -MemberType NoteProperty -Name sesSignInFrequency -Value (&{If($r.sessionControls.signInFrequency.value) {"Enabled"} Else {"Not enabled"}})

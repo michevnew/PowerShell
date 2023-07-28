@@ -25,7 +25,7 @@ function Get-MailboxForwardingInventory {
 #>
 
     [CmdletBinding()]
-    
+
     Param
     (
     #Specify whether to check Inbox rules for forwarding
@@ -35,7 +35,7 @@ function Get-MailboxForwardingInventory {
     #Specify whether to check Transport rules for forwarding
     [Switch]$CheckTransportRules,
     #Specify whether to include user mailboxes in the result
-    [Switch]$IncludeUserMailboxes,    
+    [Switch]$IncludeUserMailboxes,
     #Specify whether to include Shared mailboxes in the result
     [Switch]$IncludeSharedMailboxes,
     #Specify whether to include Room and Equipment mailboxes in the result
@@ -47,15 +47,14 @@ function Get-MailboxForwardingInventory {
     #Specify whether to include every type of mailbox in the result
     [Switch]$IncludeAll)
 
-    
     #Initialize the variable used to designate recipient types, based on the script parameters
     $included = @()
     if($IncludeUserMailboxes) { $included += "UserMailbox"}
     if($IncludeSharedMailboxes) { $included += "SharedMailbox"}
     if($IncludeRoomMailboxes) { $included += "RoomMailbox"; $included += "EquipmentMailbox"}
     if($IncludeDiscoveryMailboxes) { $included += "DiscoveryMailbox"}
-    if($IncludeTeamMailboxes) { $included += "TeamMailbox"} 
-        
+    if($IncludeTeamMailboxes) { $included += "TeamMailbox"}
+
     #Confirm connectivity to Exchange Online
     try { $session = Get-PSSession -InstanceId (Get-AcceptedDomain | select -First 1).RunspaceId.Guid -ErrorAction Stop  }
     catch { Write-Error "No active Exchange Online session detected, please connect to ExO first: https://technet.microsoft.com/en-us/library/jj984289(v=exchg.160).aspx" -ErrorAction Stop }
@@ -71,7 +70,7 @@ function Get-MailboxForwardingInventory {
         if (!$CheckInboxRules -and !$CheckCalendarDelegates) { $MBList = Get-Mailbox -Filter {ForwardingSmtpAddress -ne $null -or ForwardingAddress -ne $null} -ResultSize Unlimited -RecipientTypeDetails $included | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails,ForwardingAddress,ForwardingSMTPAddress,DeliverToMailboxAndForward }
         else { $MBList = Invoke-Command -Session $session -ScriptBlock { Get-Mailbox -ResultSize Unlimited -RecipientTypeDetails $Using:included | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails,ForwardingAddress,ForwardingSMTPAddress,DeliverToMailboxAndForward } }
     }
-    
+
     #If no mailboxes are returned from the above cmdlet, stop the script and inform the user.
     if (!$MBList) { Write-Error "No matching mailboxes found, specify different criteria." -ErrorAction Continue }
 
@@ -86,8 +85,8 @@ function Get-MailboxForwardingInventory {
         $PercentComplete = ($count / @($MBList).count * 100)
         Write-Progress -Activity $ActivityMessage -Status $StatusMessage -PercentComplete $PercentComplete -Verbose
         $count++
-                
-        #Gather forwarding configuration for each mailbox. 
+
+        #Gather forwarding configuration for each mailbox.
         if ($MB.ForwardingAddress -or $MB.ForwardingSmtpAddress) {
             #Prepare the output object
             $objForwarding = New-Object PSObject
@@ -97,7 +96,7 @@ function Get-MailboxForwardingInventory {
             Add-Member -InputObject $objForwarding -MemberType NoteProperty -Name "Keep original message" -Value (&{If($MB.DeliverToMailboxAndForward) {"True"} Else {"False"}})
             Add-Member -InputObject $objForwarding -MemberType NoteProperty -Name "Mailbox address" -Value $MB.PrimarySmtpAddress.ToString()
             Add-Member -InputObject $objForwarding -MemberType NoteProperty -Name "Mailbox type" -Value $MB.RecipientTypeDetails
-            $arrForwarding += $objForwarding 
+            $arrForwarding += $objForwarding
         }
 
         #check for Inbox rules
@@ -115,7 +114,7 @@ function Get-MailboxForwardingInventory {
         }}
 
         #check for Calendar delegates
-        if ($CheckCalendarDelegates) { 
+        if ($CheckCalendarDelegates) {
         #In PowerShell, ResourceDelegates is only configurable for Resource mailboxes now! However users can still configure it via Outlook's Delegate settings.
         $varCaldelegates = Get-CalendarProcessing -Identity $MB.PrimarySmtpAddress.ToString() | select ResourceDelegates,ForwardRequestsToDelegates
         foreach ($delegate in $varCaldelegates.ResourceDelegates) {
@@ -143,11 +142,10 @@ function Get-MailboxForwardingInventory {
             Add-Member -InputObject $objForwarding -MemberType NoteProperty -Name "Mailbox type" -Value "N/A"
             $arrForwarding += $objForwarding
     }}
-            
+
     #Output the result to the console host
     $arrForwarding | select 'Mailbox address','Mailbox type','Keep original message','Forwarding via','Forwarding to'
 }
-
 
 #Invoke the Get-MailboxForwardingInventory function and pass the command line parameters. Make sure the output is stored in a variable for reuse, even if not specified in the input!
 Get-MailboxForwardingInventory @PSBoundParameters -OutVariable global:varForwarding # | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_MailboxForwarding.csv" -NoTypeInformation

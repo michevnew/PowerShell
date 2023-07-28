@@ -30,23 +30,23 @@ foreach ($user in $users) {
 
     Write-Verbose "Processing licenses for user $($user.UserPrincipalName)"
     #Prepare the query
-    $uri = "https://graph.microsoft.com/v1.0/users/$($user.UserPrincipalName)?`$select=id,userPrincipalName,assignedLicenses"   
+    $uri = "https://graph.microsoft.com/v1.0/users/$($user.UserPrincipalName)?`$select=id,userPrincipalName,assignedLicenses"
     try { $user = Invoke-WebRequest -Headers $authHeader -Uri $uri -ErrorAction Stop | select -ExpandProperty Content | ConvertFrom-Json }
     catch { Write-Verbose "User $($user.UserPrincipalName) not found, skipping..." ; continue }
- 
+
     #Check if the user has any licenses applied, skip to the next user if not
     if (!$user.assignedLicenses) { Write-Verbose "No Licenses found for user $($user.UserPrincipalName), skipping..." ; continue }
-    
+
     #Loop over each assigned license
     foreach ($SKU in $user.assignedLicenses) {
         Write-Verbose "Removing license $($SKU.SkuId) from user $($user.UserPrincipalName)"
         #prepare query
-        $uri = "https://graph.microsoft.com/v1.0/users/$($user.UserPrincipalName)/assignLicense"   
+        $uri = "https://graph.microsoft.com/v1.0/users/$($user.UserPrincipalName)/assignLicense"
         $body = @{
             "addLicenses" = @()
             "removeLicenses" = @($SKU.skuId)
         }
-        
+
         #try to remove the license
         try {
             Invoke-WebRequest -Headers $authHeader -Uri $uri -Body ($body | ConvertTo-Json) -Method Post -ErrorAction Stop -Verbose -ContentType 'application/json' | Out-Null

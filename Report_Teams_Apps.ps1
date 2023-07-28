@@ -13,7 +13,7 @@ $body = @{
     scope = "https://graph.microsoft.com/.default"
 }
 
-#Obtain the token 
+#Obtain the token
 try { $tokenRequest = Invoke-WebRequest -Method Post -Uri $url -ContentType "application/x-www-form-urlencoded" -Body $body -UseBasicParsing -ErrorAction Stop }
 catch { Write-Host "Unable to obtain access token, aborting..."; return }
 
@@ -74,7 +74,7 @@ foreach ($team in $Teams) {
     #Get a list of channels so we can also cover Tabs
     $TeamChannels = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/beta/Teams/$($Team.id)/channels" -ErrorAction Stop
     $TeamChannels = ($TeamChannels.Content | ConvertFrom-Json).value
-    
+
     #Iterate over each channel, enumerate Tabs
     foreach ($channel in $TeamChannels) {
         $tabs = Invoke-WebRequest -Headers $authHeader1 -Uri "https://graph.microsoft.com/beta/teams/$($Team.id)/channels/$($channel.id)/tabs?`$expand=teamsApp" -ErrorAction Stop

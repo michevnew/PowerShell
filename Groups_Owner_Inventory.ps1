@@ -5,10 +5,10 @@ Remove-Module AzureAD -ErrorAction SilentlyContinue
 
 #Check whether the Azure AD module exists and load it
 try { Import-Module AzureADPreview -ErrorAction Stop }
-catch [System.IO.FileNotFoundException] { 
+catch [System.IO.FileNotFoundException] {
 
     Write-Host "Azure AD Preview module not found... Checking for the Azure AD module." -ForegroundColor Cyan
-    
+
     try { Import-Module AzureAD -ErrorAction Stop }
     catch [System.IO.FileNotFoundException] { Write-Host "This script requires the Azure AD PowerShell module. Download it here: https://www.powershellgallery.com/packages/AzureAD/" -ForegroundColor Red; return }
 }
@@ -29,7 +29,7 @@ function Get-AzureADGroupOwnersInventory {
         $output = Get-AzureADMSGroup -All:$true | % { $_ | Add-Member "Owners" ((Get-AzureADGroupOwner -ObjectId $_.id).UserPrincipalName -join ";") -PassThru }
         $output | sort DisplayName | select DisplayName,MailEnabled,SecurityEnabled,GroupTypes,Owners,@{n="ObjectId";e={$_.Id}}
     }
-    else { 
+    else {
         Write-Host "Using the Azure AD module." -ForegroundColor Cyan
         $output = Get-AzureADGroup -All:$true | % { $_ | Add-Member "Owners" ((Get-AzureADGroupOwner -ObjectId $_.ObjectId).UserPrincipalName -join ";") -PassThru }
         $output | sort DisplayName | select DisplayName,MailEnabled,SecurityEnabled,Owners,ObjectId
