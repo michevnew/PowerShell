@@ -9,6 +9,6 @@ Output will be exported to a CSV file within the current directory. A single ent
 ```
 [Microsoft Graph(user@domain.com)]:profile,openid,User.Read;[Microsoft Graph]:Directory.Read.All;[Office 365 Exchange Online]:full_access_as_app,Exchange.ManageAsApp
 ```
-Additional information about the script can be found at: https://www.michev.info/Blog/Post/3665/3665
+Additional information about the script can be found at: https://www.michev.info/blog/post/3665/azure-ad-application-registration-inventory-script
 
 Questions and feedback are welcome.
