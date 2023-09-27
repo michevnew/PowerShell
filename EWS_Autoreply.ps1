@@ -1,5 +1,7 @@
 Param([ValidateNotNullOrEmpty()][String]$Mailbox)
 
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/5773/configure-an-auto-reply-rule-for-microsoft-365-mailboxes-via-ews
+
 #Load the EWS Managed API DLL
 $ewsAPIPath = "C:\Program Files\Microsoft\Exchange\Web Services\2.2\Microsoft.Exchange.WebServices.dll"
 try {
