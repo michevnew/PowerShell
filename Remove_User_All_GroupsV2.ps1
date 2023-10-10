@@ -11,6 +11,7 @@ Param([ValidateNotNullOrEmpty()][Alias("UserToRemove")][String[]]$Identity,[swit
 #Add switch to handle situations where the user is the only owner of a Group?
 #Handle privileged AAD groups
 
+#2023.10.09 - Script modified to work using App-only authentication for unattended scripts - https://learn.microsoft.com/en-us/powershell/exchange/app-only-auth-powershell-v2?view=exchange-ps
 
 function Check-Connectivity {
     [cmdletbinding()]
@@ -23,7 +24,10 @@ function Check-Connectivity {
         try {
             if (!(Get-MgContext) -or !((Get-MgContext).Scopes.Contains("Group.ReadWrite.All"))) {
                 Write-Verbose "Not connected to the Microsoft Graph or the required permissions are missing!"
-                Connect-MgGraph -Scopes Directory.Read.All,Group.ReadWrite.All -ErrorAction Stop | Out-Null
+
+                <# We won't connect this way.  Need to use App + Cert based unattended.  Script will not prompt for a connection.#>
+                #Connect-MgGraph -Scopes Directory.Read.All,Group.ReadWrite.All -ErrorAction Stop | Out-Null
+
                 Select-MgProfile beta -ErrorAction Stop -WhatIf:$false #needed for the filter stuff
             }
         }
@@ -38,11 +42,12 @@ function Check-Connectivity {
     #Check via Get-ConnectionInformation first
     if (Get-ConnectionInformation) { return $true }
 
-    #Double-check and try to eastablish a session
+    #Double-check
     try { Get-EXORecipient -ResultSize 1 -ErrorAction Stop | Out-Null }
     catch {
-        try { Connect-ExchangeOnline -CommandName Get-EXORecipient, Get-User, Remove-DistributionGroupMember, Remove-UnifiedGroupLinks -SkipLoadingFormatData } #custom for this script
-        catch { Write-Error "No active Exchange Online session detected. To connect to ExO: https://docs.microsoft.com/en-us/powershell/exchange/connect-to-exchange-online-powershell?view=exchange-ps"; return $false }
+        <# We won't connect this way.  Need to use App + Cert based unattended.  Script will not prompt for a connection.#>
+        #try { Connect-ExchangeOnline -CommandName Get-EXORecipient, Get-User, Remove-DistributionGroupMember, Remove-UnifiedGroupLinks -SkipLoadingFormatData } #custom for this script
+        #catch { Write-Error "No active Exchange Online session detected. To connect to ExO: https://docs.microsoft.com/en-us/powershell/exchange/connect-to-exchange-online-powershell?view=exchange-ps"; return $false }
     }
 
     return $true
@@ -108,6 +113,9 @@ This parameter accepts the following values:
         [switch]$Quiet)
 
     Begin {
+
+<#TODO: Fix - I just don't care about a connectivity check, and this one is incomplete anyway.#>
+
         #Check if we are connected to Exchange Online/Graph PowerShell...
         if (Check-Connectivity -IncludeAADSecurityGroups:$IncludeAADSecurityGroups) { Write-Verbose "Parsing the Identity parameter..." }
         else { Write-Host "ERROR: Connectivity test failed, exiting the script..." -ForegroundColor Red; continue }
@@ -152,7 +160,10 @@ This parameter accepts the following values:
                 if ($Group.RecipientTypeDetails -eq "GroupMailbox") {
                     try {
                         Write-Verbose "Removing user ""$($user.Name)"" from Microsoft 365 Group ""$($Group.DisplayName)"" ..."
-                        Remove-UnifiedGroupLinks -Identity $Group.ExternalDirectoryObjectId -Links $user.Value.DistinguishedName -LinkType Member -Confirm:$false -WhatIf:$WhatIfPreference -ErrorAction Stop
+
+                         # Remove-UnifiedGroupLinks -Identity $Group.ExternalDirectoryObjectId -Links $user.Value.DistinguishedName -LinkType Member -Confirm:$false -WhatIf:$WhatIfPreference -ErrorAction Stop # Does not work with cert based unattended logic
+                        Remove-MgGroupMemberByRef -DirectoryObjectId $GUID.ExternalDirectoryObjectId -GroupId $Group.ExternalDirectoryObjectId -Confirm:$false -WhatIf:$WhatIfPreference -ErrorAction Stop
+
                         $outtemp = New-Object psobject -Property ([ordered]@{"User" = $user.Name;"Group" = $Group.ExternalDirectoryObjectId;"GroupName" = $Group.DisplayName})
                         $out += $outtemp; if (!$Quiet -and !$WhatIfPreference) { $outtemp } #Write output to the console unless the -Quiet parameter is used
                     }
