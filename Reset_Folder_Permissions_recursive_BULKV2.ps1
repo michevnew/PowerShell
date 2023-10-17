@@ -4,7 +4,7 @@
 [CmdletBinding(SupportsShouldProcess)] #Make sure we can use -WhatIf and -Verbose
 Param([switch]$Quiet,[ValidateNotNullOrEmpty()][Alias("Identity")][String[]]$Mailbox,[switch]$ResetDefaultLevel,[ValidateNotNullOrEmpty()][String[]]$ParentFolderPath)
 
-#For details on what the script does and how to run it, check: hhttps://www.michev.info/blog/post/5763/managing-mailbox-folder-permissions-in-bulk-in-microsoft-365
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/5763/managing-mailbox-folder-permissions-in-bulk-in-microsoft-365
 
 #Include these folder types by default
 $includedfolders = @("Root", "Inbox", "Calendar", "Contacts", "DeletedItems", "Drafts", "JunkEmail", "Journal", "Notes", "Outbox", "SentItems", "Tasks", "CommunicatorHistory", "Clutter", "Archive", "Scheduled")

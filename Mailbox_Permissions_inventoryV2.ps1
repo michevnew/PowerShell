@@ -94,6 +94,7 @@ function Get-MailboxPermissionInventory {
             $objPermissions = New-Object PSObject
             $i++;Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Number" -Value $i
             Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "User" -Value $entry.user
+            Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "User Sid" -Value $entry.UserSid
             Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Mailbox address" -Value $MB.PrimarySmtpAddress.ToString()
             Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Mailbox type" -Value $MB.RecipientTypeDetails
             Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Is soft-deleted" -Value (& {If($MB.Identity -match "Soft Deleted Objects\\") {"True"} else {"False"}})
