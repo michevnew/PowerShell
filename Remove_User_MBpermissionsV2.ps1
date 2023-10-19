@@ -4,6 +4,8 @@
 [CmdletBinding(SupportsShouldProcess)] #Make sure we can use -WhatIf and -Verbose
 Param([ValidateNotNullOrEmpty()][Alias("UserToRemove")][String[]]$Identity,[switch]$IncludeSharedMailboxes,[switch]$IncludeResourceMailboxes)
 
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/5796/bulk-remove-mailbox-permissions-for-microsoft-365-users
+
 function Check-Connectivity {
     [cmdletbinding()]
     [OutputType([bool])]
@@ -18,7 +20,7 @@ function Check-Connectivity {
     #Double-check and try to eastablish a session
     try { Get-EXOMailbox -ResultSize 1 -ErrorAction Stop | Out-Null }
     catch {
-        try { Connect-ExchangeOnline -CommandName Get-EXOMailbox, Get-User, Remove-MailboxPermission -SkipLoadingFormatData } #custom for this script
+        try { Connect-ExchangeOnline -CommandName Get-EXOMailbox, Get-User, Get-MailboxPermission, Remove-MailboxPermission -SkipLoadingFormatData -ShowBanner:$false } #custom for this script
         catch { Write-Error "No active Exchange Online session detected. To connect to ExO: https://docs.microsoft.com/en-us/powershell/exchange/connect-to-exchange-online-powershell?view=exchange-ps"; return $false }
     }
 
@@ -91,8 +93,8 @@ This parameter accepts the following values:
 
     #Initialize the variable used to designate recipient types, based on the script parameters
     $included = @("UserMailbox")
-    if($IncludeSharedMailboxes) { $included += "SharedMailbox"}
-    if ($IncludeRoomMailboxes) { $included += "RoomMailbox"; $included += "EquipmentMailbox"; $included += "SchedulingMailbox"}
+    if ($IncludeSharedMailboxes) { $included += "SharedMailbox" }
+    if ($IncludeRoomMailboxes) { $included += "RoomMailbox"; $included += "EquipmentMailbox"; $included += "SchedulingMailbox" }
 
     #Prepare the list of users (security principals)
     Write-Verbose "Parsing the Identity parameter..."
@@ -113,6 +115,7 @@ This parameter accepts the following values:
         Write-Verbose "More than 4 users to be processed, obtaining full mailbox permission inventory..."
         try {
             $mailboxes = .\Mailbox_Permissions_inventoryV2.ps1 -IncludeUserMailboxes -IncludeSharedMailboxes:$IncludeSharedMailboxes -IncludeRoomMailboxes:$IncludeResourceMailboxes -Verbose:$VerbosePreference
+            $mailboxes | Out-Default
             Write-Verbose "Obtained total of $($mailboxes.count) permission entries."
         }
         catch {
@@ -133,7 +136,8 @@ This parameter accepts the following values:
         if (!$mailboxes -or $mailboxes.count -eq 0) {
             #Remove permissions the stupid way
             Write-Verbose "Removing mailbox permissions for user ""$($user.Name)""..."
-            Get-ExOMailbox -RecipientTypeDetails $included -ResultSize Unlimited | Remove-MailboxPermission -User $user.Value.UserPrincipalName -AccessRights FullAccess -Confirm:$false -WhatIf:$using:WhatIfPreference
+            Write-Verbose "WARNING! No output will be generated as we are using the pipeline method to remove permissions."
+            Get-ExOMailbox -RecipientTypeDetails $included -ResultSize Unlimited -Verbose:$false | Remove-MailboxPermission -User $user.Value.UserPrincipalName -AccessRights FullAccess -Confirm:$false -WhatIf:$WhatIfPreference
         }
 
         else {
@@ -149,8 +153,8 @@ This parameter accepts the following values:
                     $outtemp = New-Object psobject -Property ([ordered]@{"Mailbox" = $mailbox.'Mailbox address';"AccessLevel" = "Full Access";"User" = $user.Value.UserPrincipalName})
                     $out += $outtemp; if (!$WhatIfPreference) { $outtemp } #Write output to the console unless we are using -WhatIf
                 }
-                catch [System.Management.Automation.RemoteException] {
-                    if ($_.CategoryInfo.Reason -eq "ManagementObjectNotFoundException") { Write-Host "ERROR: The specified object not found, this should not happen..." -ForegroundColor Red }
+                catch [System.Exception] {
+                    if ($_.Exception.Message -match "ManagementObjectNotFoundException") { Write-Host "ERROR: The specified object not found, this should not happen..." -ForegroundColor Red }
                     else {$_ | fl * -Force; continue} #catch-all for any unhandled errors
                 }
                 catch {$_ | fl * -Force; continue} #catch-all for any unhandled errors

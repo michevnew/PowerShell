@@ -44,33 +44,33 @@ function Get-MailboxPermissionInventory {
 
     #Initialize the variable used to designate recipient types, based on the script parameters
     $included = @()
-    if ($IncludeUserMailboxes) { $included += "UserMailbox"}
-    if ($IncludeSharedMailboxes) { $included += "SharedMailbox"}
-    if ($IncludeRoomMailboxes) { $included += "RoomMailbox"; $included += "EquipmentMailbox"; $included += "SchedulingMailbox"}
+    if ($IncludeUserMailboxes) { $included += "UserMailbox" }
+    if ($IncludeSharedMailboxes) { $included += "SharedMailbox" }
+    if ($IncludeRoomMailboxes) { $included += "RoomMailbox"; $included += "EquipmentMailbox"; $included += "SchedulingMailbox" }
 
     #Make sure we have a V2 version of the module
     try { Get-Command Get-EXOMailbox -ErrorAction Stop | Out-Null }
     catch { Write-Error "This script requires the Exchange Online V2 PowerShell module. Learn more about it here: https://docs.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2?view=exchange-ps#install-and-maintain-the-exo-v2-module" -ErrorAction Stop}
 
     #Confirm connectivity to Exchange Online
-    try { Get-EXOMailbox -ResultSize 1 -ErrorAction Stop | Out-Null }
+    try { Get-EXOMailbox -ResultSize 1 -ErrorAction Stop -Verbose:$false | Out-Null }
     catch {
-        try { Connect-ExchangeOnline -ErrorAction Stop }
+        try { Connect-ExchangeOnline -ErrorAction Stop -ShowBanner:$false -Verbose:$false }
         catch { Write-Error "No active Exchange Online session detected. To connect to ExO: https://docs.microsoft.com/en-us/powershell/exchange/connect-to-exchange-online-powershell?view=exchange-ps" -ErrorAction Stop }
     }
 
     #Get the list of mailboxes, depending on the parameters specified when invoking the script
     if ($IncludeAll -or !$included) {
-        $MBList = Get-ExOMailbox -ResultSize Unlimited -RecipientTypeDetails UserMailbox,SharedMailbox,RoomMailbox,EquipmentMailbox,SchedulingMailbox | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails
-        if ($IncludeSoftDeleted) { $MBList += Get-ExOMailbox -SoftDeletedMailbox -ResultSize Unlimited -RecipientTypeDetails UserMailbox,SharedMailbox,RoomMailbox,EquipmentMailbox,SchedulingMailbox | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails }
+        $MBList = Get-ExOMailbox -ResultSize Unlimited -RecipientTypeDetails UserMailbox,SharedMailbox,RoomMailbox,EquipmentMailbox,SchedulingMailbox -Verbose:$false | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails
+        if ($IncludeSoftDeleted) { $MBList += Get-ExOMailbox -SoftDeletedMailbox -ResultSize Unlimited -RecipientTypeDetails UserMailbox,SharedMailbox,RoomMailbox,EquipmentMailbox,SchedulingMailbox -Verbose:$false | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails }
     }
     else {
-        $MBList = Get-ExOMailbox -ResultSize Unlimited -RecipientTypeDetails $included | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails
-        if ($IncludeSoftDeleted) { $MBList += Get-ExOMailbox -SoftDeletedMailbox -ResultSize Unlimited -RecipientTypeDetails $included | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails }
+        $MBList = Get-ExOMailbox -ResultSize Unlimited -RecipientTypeDetails $included -Verbose:$false | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails
+        if ($IncludeSoftDeleted) { $MBList += Get-ExOMailbox -SoftDeletedMailbox -ResultSize Unlimited -RecipientTypeDetails $included -Verbose:$false | Select-Object -Property Displayname,Identity,PrimarySMTPAddress,RecipientTypeDetails }
     }
 
     #If no mailboxes are returned from the above cmdlet, stop the script and inform the user
-    if (!$MBList) { Write-Error "No mailboxes of the specified types were found, specify different criteria." -ErrorAction Stop}
+    if (!$MBList) { Write-Error "No mailboxes of the specified types were found, specify different criteria." -ErrorAction Stop }
 
     #Once we have the mailbox list, cycle over each mailbox to gather permissions inventory
     $arrPermissions = @()
@@ -84,8 +84,8 @@ function Get-MailboxPermissionInventory {
         $count++
 
         #Gather permissions for each mailbox. Uncomment the end part to only return Full Access permissions and ignore orphaned entries
-        if ($MB.Identity -match "Soft Deleted Objects\\") { $MBrights = Get-ExOMailboxPermission -SoftDeletedMailbox -Identity $MB.Identity | ? {($_.User -ne "NT AUTHORITY\SELF") -and ($_.IsInherited -ne $true)}} #or better use GUID?
-        else { $MBrights = Get-ExOMailboxPermission -Identity $MB.PrimarySmtpAddress.ToString() | ? {($_.User -ne "NT AUTHORITY\SELF") -and ($_.IsInherited -ne $true)}}
+        if ($MB.Identity -match "Soft Deleted Objects\\") { $MBrights = Get-MailboxPermission -SoftDeletedMailbox -Identity $MB.Identity -Verbose:$false | ? {($_.User -ne "NT AUTHORITY\SELF") -and ($_.IsInherited -ne $true)}} #or better use GUID?
+        else { $MBrights = Get-MailboxPermission -Identity $MB.PrimarySmtpAddress.ToString() -Verbose:$false | ? {($_.User -ne "NT AUTHORITY\SELF") -and ($_.IsInherited -ne $true)}}
         #No non-default permissions found, continue to next mailbox
         if (!$MBrights) { continue }
 
@@ -94,7 +94,7 @@ function Get-MailboxPermissionInventory {
             $objPermissions = New-Object PSObject
             $i++;Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Number" -Value $i
             Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "User" -Value $entry.user
-            Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "User Sid" -Value $entry.UserSid
+            Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "User Sid" -Value $entry.UserSid #NOT returned by Get-ExOMailboxPermission!
             Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Mailbox address" -Value $MB.PrimarySmtpAddress.ToString()
             Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Mailbox type" -Value $MB.RecipientTypeDetails
             Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Is soft-deleted" -Value (& {If($MB.Identity -match "Soft Deleted Objects\\") {"True"} else {"False"}})
