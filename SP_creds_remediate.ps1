@@ -280,7 +280,7 @@ foreach ($SP in $SPs) {
 
 #Export the result to CSV file
 $output | select * -ExcludeProperty Number | Export-CSV -nti -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_SPCredsReport.csv" -Confirm:$false
-Write-Verbose "Output exported to ""$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_SPCredsReport.csv"""
+Write-Verbose "Output exported to $($PWD)\$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_SPCredsReport.csv"
 
 #Remediation part
 #Filter out any SP with no credentials
