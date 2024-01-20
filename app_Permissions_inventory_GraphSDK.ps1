@@ -1,16 +1,15 @@
 #Requires -Version 3.0
-#Make sure to fill in all the required variables before running the script
-#Also make sure the AppID used corresponds to an app with sufficient permissions, as follows:
+#The script requires the following permissions:
 #    Directory.Read.All (hard-requirement for oauth2PermissionGrants, covers everything else needed)
 #    CustomSecAttributeAssignment.Read.All (optional, needed to retrieve custom security attributes)
 #    AuditLog.Read.All (optional, needed to retrieve Sign-in stats)
 #    Reports.Read.All (optional, needed to retrieve Sign-in summary stats)
 #    CrossTenantInformation.ReadBasic.All (optional, needed to retrieve owner organization info)
 
-#For details on what the script does and how to run it, check: Permalink: https://www.michev.info/blog/post/5922/reporting-on-entra-id-integrated-applications-service-principals-and-their-permissions
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/5922/reporting-on-entra-id-integrated-applications-service-principals-and-their-permissions
 
 [CmdletBinding(SupportsShouldProcess)] #Make sure we can use -WhatIf and -Verbose
-Param([switch]$IncludeBuiltin=$false, [switch]$IncludeOwnerOrg=$false, [switch]$IncludeCSA=$false, [switch]$IncludeSignInStats)
+Param([switch]$IncludeBuiltin=$false, [switch]$IncludeOwnerOrg=$false, [switch]$IncludeCSA=$false, [switch]$IncludeSignInStats=$false)
 
 #==========================================================================
 #Helper functions
@@ -182,15 +181,15 @@ function Get-SPOwnerOrg {
 
 #Determine the required scopes, based on the parameters passed to the script
 $RequiredScopes = switch ($PSBoundParameters.Keys) {
-    IncludeBuiltin { "Directory.Read.All" }
-    IncludeOwnerOrg { "CrossTenantInformation.ReadBasic.All" }
-    IncludeCSA { "CustomSecAttributeAssignment.Read.All" }
-    IncludeSignInStats { "AuditLog.Read.All", "Reports.Read.All" }
+    "IncludeBuiltin" { "Directory.Read.All" }
+    "IncludeOwnerOrg" { "CrossTenantInformation.ReadBasic.All" }
+    "IncludeCSA" { "CustomSecAttributeAssignment.Read.All" }
+    "IncludeSignInStats" { "AuditLog.Read.All", "Reports.Read.All" }
     Default { "Directory.Read.All" }
 }
 
 Write-Verbose "Connecting to Graph API..."
-Import-Module Microsoft.Graph.Beta.Applications
+Import-Module Microsoft.Graph.Beta.Applications -Verbose:$false -ErrorAction Stop
 try {
     Connect-MgGraph -Scopes $RequiredScopes -verbose:$false -ErrorAction Stop -NoWelcome
 }
@@ -254,7 +253,8 @@ foreach ($SP in $SPs) {
     #Get owners info. We do not use $expand, as it returns the full set of object properties
     Write-Verbose "Retrieving owners info..."
     $owners = @()
-    $owners = Get-MgBetaServicePrincipalOwner -ServicePrincipalId $SP.id -ErrorAction Stop -Verbose:$false
+    $owners = Get-MgBetaServicePrincipalOwner -ServicePrincipalId $SP.id -Property id,userPrincipalName -All -ErrorAction Stop -Verbose:$false
+    if ($owners) { $owners = $owners.userPrincipalName }
 
     #Include info about the SP owner organization
     if ($IncludeOwnerOrg) {
@@ -280,9 +280,9 @@ foreach ($SP in $SPs) {
         "Homepage" = (&{if ($SP.Homepage) { $SP.Homepage } else { $null }})
         "SP name" = $SP.displayName
         "ObjectId" = $SP.id
-        "Created on" = (&{if ($SP.AdditionalProperties.createdDateTime) {(Get-Date($SP.AdditionalProperties.createdDateTime) -format g)} else { $null }})
+        "Created on" = (&{if ($SP.AdditionalProperties.createdDateTime) {(Get-Date($SP.AdditionalProperties.createdDateTime) -format g)} else { "N/A" }})
         "Enabled" = $SP.AccountEnabled
-        "Owners" = (&{if ($owners) { $owners -join ";" } else { $null }})
+        "Owners" = (&{if ($owners) { $owners -join "," } else { $null }})
         "Member of (groups)" = $memberOfGroups
         "Member of (roles)" = $memberOfRoles
         "PasswordCreds" = (&{if ($SP.passwordCredentials) { $SP.passwordCredentials.keyId -join ";" } else { $null }})

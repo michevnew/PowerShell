@@ -7,10 +7,10 @@
 #    Reports.Read.All (optional, needed to retrieve Sign-in summary stats)
 #    CrossTenantInformation.ReadBasic.All (optional, needed to retrieve owner organization info)
 
-#For details on what the script does and how to run it, check: Permalink: https://www.michev.info/blog/post/5922/reporting-on-entra-id-integrated-applications-service-principals-and-their-permissions
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/5922/reporting-on-entra-id-integrated-applications-service-principals-and-their-permissions
 
 [CmdletBinding(SupportsShouldProcess)] #Make sure we can use -WhatIf and -Verbose
-Param([switch]$IncludeBuiltin=$false, [switch]$IncludeOwnerOrg=$false, [switch]$IncludeCSA=$false, [switch]$IncludeSignInStats)
+Param([switch]$IncludeBuiltin=$false, [switch]$IncludeOwnerOrg=$false, [switch]$IncludeCSA=$false, [switch]$IncludeSignInStats=$false)
 
 #==========================================================================
 #Helper functions
@@ -184,7 +184,7 @@ function Get-SPOwnerOrg {
 
 #Get an Access token. Make sure to fill in all the variable values here. Or replace with your own preferred method to obtain token.
 $tenantId = "tenant.onmicrosoft.com"
-$url = 'https://login.microsoftonline.com/' + $tenantId + '/oauth2/v2.0/token'
+$uri = 'https://login.microsoftonline.com/' + $tenantId + '/oauth2/v2.0/token'
 $clientId = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 $client_secret = "verylongstring"
 
@@ -201,7 +201,7 @@ $body = @{
 
 try {
     Write-Verbose "Obtaining token..."
-    $res = Invoke-WebRequest -Method Post -Uri $url -Body $body -ErrorAction Stop -Verbose:$false
+    $res = Invoke-WebRequest -Method Post -Uri $uri -Body $body -ErrorAction Stop -Verbose:$false
     $token = ($res.Content | ConvertFrom-Json).access_token
 
     $authHeader = @{
@@ -350,7 +350,7 @@ foreach ($SP in $SPs) {
         "Homepage" = (&{if ($SP.Homepage) { $SP.Homepage } else { $null }})
         "SP name" = $SP.displayName
         "ObjectId" = $SP.id
-        "Created on" = (&{if ($SP.createdDateTime) {(Get-Date($SP.createdDateTime) -format g)} else { $null }})
+        "Created on" = (&{if ($SP.createdDateTime) {(Get-Date($SP.createdDateTime) -format g)} else { "N/A" }})
         "Enabled" = $SP.AccountEnabled
         "Owners" = (&{if ($owners) { $owners -join ";" } else { $null }})
         "Member of (groups)" = $memberOfGroups
