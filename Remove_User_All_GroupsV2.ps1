@@ -24,7 +24,7 @@ function Check-Connectivity {
             if (!(Get-MgContext) -or !((Get-MgContext).Scopes.Contains("Group.ReadWrite.All"))) {
                 Write-Verbose "Not connected to the Microsoft Graph or the required permissions are missing!"
                 Connect-MgGraph -Scopes Directory.Read.All,Group.ReadWrite.All -ErrorAction Stop | Out-Null
-                Select-MgProfile beta -ErrorAction Stop -WhatIf:$false #needed for the filter stuff
+                if ((Get-Module "Microsoft.Graph.Users").Version.Major -eq 1) { Select-MgProfile beta -ErrorAction Stop -WhatIf:$false } #needed for the filter stuff
             }
         }
         catch { Write-Error $_; return $false }
@@ -140,7 +140,7 @@ This parameter accepts the following values:
             Write-Verbose "Obtaining group list for user ""$($user.Name)""..."
             if ($IncludeOffice365Groups) { $GroupTypes = @("GroupMailbox","MailUniversalDistributionGroup","MailUniversalSecurityGroup") }
             else { $GroupTypes = @("MailUniversalDistributionGroup","MailUniversalSecurityGroup") }
-            $Groups = Get-EXORecipient -Filter "Members -eq '$($user.Value.DistinguishedName)'" -RecipientTypeDetails $GroupTypes -ErrorAction SilentlyContinue | Select-Object DisplayName,ExternalDirectoryObjectId,RecipientTypeDetails
+            $Groups = Get-EXORecipient -Filter "Members -eq '$($user.Value.DistinguishedName)'" -RecipientTypeDetails $GroupTypes -ErrorAction SilentlyContinue -Verbose:$false | Select-Object DisplayName,ExternalDirectoryObjectId,RecipientTypeDetails
 
             if (!$Groups) { Write-Verbose "No matching groups found for ""$($user.Name)"", skipping..." }
             else { Write-Verbose "User ""$($user.Name)"" is a member of $(($Groups | measure).count) group(s)." }

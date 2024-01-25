@@ -1,6 +1,5 @@
 #Requires -Version 3.0
-#Make sure to fill in all the required variables before running the script
-#Also make sure the AppID used corresponds to an app with sufficient permissions, as follows:
+#The script requires the following permissions:
 #    Application.Read.All (required)
 #    AuditLog.Read.All (optional, needed to retrieve Sign-in stats)
 #    DirectoryRecommendations.Read.All (optional, needed to retrieve directory recommendations)
@@ -372,3 +371,4 @@ foreach ($App in $Apps) {
 
 #Export the result to CSV file
 $output | select * -ExcludeProperty Number | Export-CSV -nti -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_GraphAppRegInventory.csv"
+Write-Verbose "Output exported to $($PWD)\$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_GraphAppRegInventory.csv"
