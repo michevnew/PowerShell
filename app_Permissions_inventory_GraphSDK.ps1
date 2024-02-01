@@ -15,31 +15,6 @@ Param([switch]$IncludeBuiltin=$false, [switch]$IncludeOwnerOrg=$false, [switch]$
 #Helper functions
 #==========================================================================
 
-#Lite version of the Parse-JWTtoken function from https://www.michev.info/Blog/Post/2247/parse-jwt-token-in-powershell
-function Parse-JWTtoken {
-
-    [cmdletbinding()]
-    param([Parameter(Mandatory=$true)][string]$token)
-
-    #Validate as per https://tools.ietf.org/html/rfc7519
-    if (!$token.Contains(".") -or !$token.StartsWith("eyJ")) { Write-Error "Invalid token" -ErrorAction Stop }
-
-    #Payload
-    $tokenPayload = $token.Split(".")[1].Replace('-', '+').Replace('_', '/')
-    #Fix padding as needed, keep adding "=" until string length modulus 4 reaches 0
-    while ($tokenPayload.Length % 4) { Write-Verbose "Invalid length for a Base-64 char array or string, adding ""="""; $tokenPayload += "=" }
-
-    #Convert to Byte array
-    $tokenByteArray = [System.Convert]::FromBase64String($tokenPayload)
-    #Convert to string array
-    $tokenArray = [System.Text.Encoding]::ASCII.GetString($tokenByteArray)
-
-    #Convert from JSON to PSObject
-    $tokobj = $tokenArray | ConvertFrom-Json
-
-    return $tokobj
-}
-
 function parse-AppPermissions {
 
     Param(
