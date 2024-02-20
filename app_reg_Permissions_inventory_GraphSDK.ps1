@@ -262,6 +262,7 @@ if ($IncludeSignInStats) {
     if ($SPSignInStats) { parse-SPSignInStats $SPSignInStats }
 
     Write-Verbose "Retrieving application credential usage stats..."
+    #This requires Azure AD Premium P2 now, and will require Workload Idenity license when GA :(
 
     $AppCredStats = @()
     $AppCredStats = Get-MgBetaReportAppCredentialSignInActivity -All -ErrorAction Stop -Verbose:$false

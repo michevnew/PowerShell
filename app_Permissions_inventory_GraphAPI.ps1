@@ -215,9 +215,9 @@ $tokenobj = Parse-JWTtoken $token
 if ($IncludeCSA) {
     #Custom security attributes are not retuned by default, so we need a list of properties to retrieve...
     if ($tokenobj.roles -notcontains "CustomSecAttributeAssignment.Read.All") { Write-Warning "The access token does not have the required permissions to retrieve custom security attributes, data will not be included in the output..." }
-    else { $properties = "appDisplayName,appId,appOwnerOrganizationId,displayName,id,createdDateTime,AccountEnabled,passwordCredentials,keyCredentials,tokenEncryptionKeyId,verifiedPublisher,Homepage,PublisherName,tags,customSecurityAttributes" }
+    else { $properties = "appDisplayName,appId,appOwnerOrganizationId,displayName,id,servicePrincipalType,createdDateTime,AccountEnabled,passwordCredentials,keyCredentials,tokenEncryptionKeyId,verifiedPublisher,Homepage,PublisherName,tags,customSecurityAttributes" }
 }
-else { $properties = "appDisplayName,appId,appOwnerOrganizationId,displayName,id,createdDateTime,AccountEnabled,passwordCredentials,keyCredentials,tokenEncryptionKeyId,verifiedPublisher,Homepage,PublisherName,tags" }
+else { $properties = "appDisplayName,appId,appOwnerOrganizationId,displayName,id,servicePrincipalType,createdDateTime,AccountEnabled,passwordCredentials,keyCredentials,tokenEncryptionKeyId,verifiedPublisher,Homepage,PublisherName,tags" }
 
 #Get the list of Service principal objects within the tenant.
 #Only /beta returns publisherName currently
@@ -350,6 +350,7 @@ foreach ($SP in $SPs) {
         "Homepage" = (&{if ($SP.Homepage) { $SP.Homepage } else { $null }})
         "SP name" = $SP.displayName
         "ObjectId" = $SP.id
+        "Type" = $SP.servicePrincipalType
         "Created on" = (&{if ($SP.createdDateTime) {(Get-Date($SP.createdDateTime) -format g)} else { "N/A" }})
         "Enabled" = $SP.AccountEnabled
         "Owners" = (&{if ($owners) { $owners -join ";" } else { $null }})

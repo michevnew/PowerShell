@@ -175,8 +175,8 @@ $CurrentScopes = (Get-MgContext).Scopes
 if ($RequiredScopes | ? {$_ -notin $CurrentScopes }) { Write-Error "The access token does not have the required permissions, rerun the script and consent to the missing scopes!" -ErrorAction Stop }
 
 #Make sure we include Custom security attributes in the report, if requested
-if ($IncludeCSA) { $properties = "appDisplayName,appId,appOwnerOrganizationId,displayName,id,createdDateTime,AccountEnabled,passwordCredentials,keyCredentials,tokenEncryptionKeyId,verifiedPublisher,Homepage,PublisherName,tags,customSecurityAttributes" }
-else { $properties = "appDisplayName,appId,appOwnerOrganizationId,displayName,id,createdDateTime,AccountEnabled,passwordCredentials,keyCredentials,tokenEncryptionKeyId,verifiedPublisher,Homepage,PublisherName,tags" }
+if ($IncludeCSA) { $properties = "appDisplayName,appId,appOwnerOrganizationId,displayName,id,servicePrincipalType,createdDateTime,AccountEnabled,passwordCredentials,keyCredentials,tokenEncryptionKeyId,verifiedPublisher,Homepage,PublisherName,tags,customSecurityAttributes" }
+else { $properties = "appDisplayName,appId,appOwnerOrganizationId,displayName,id,servicePrincipalType,createdDateTime,AccountEnabled,passwordCredentials,keyCredentials,tokenEncryptionKeyId,verifiedPublisher,Homepage,PublisherName,tags" }
 
 #Get the list of Service principal objects within the tenant.
 #Only /beta returns publisherName currently
@@ -255,6 +255,7 @@ foreach ($SP in $SPs) {
         "Homepage" = (&{if ($SP.Homepage) { $SP.Homepage } else { $null }})
         "SP name" = $SP.displayName
         "ObjectId" = $SP.id
+        "Type" = $SP.servicePrincipalType
         "Created on" = (&{if ($SP.AdditionalProperties.createdDateTime) {(Get-Date($SP.AdditionalProperties.createdDateTime) -format g)} else { "N/A" }})
         "Enabled" = $SP.AccountEnabled
         "Owners" = (&{if ($owners) { $owners -join "," } else { $null }})
