@@ -6,7 +6,7 @@ By default, the script only covers User mailboxes. To include Shared mailboxes, 
 
 The script will detect and reuse any existing sessions to Exchange Remote PowerShell. Basic functionality to facilitate a new connection to Exchange Online is also included, but it does not cover all possible scenarios. If you are using an MFA-protected account or any of the non-MT Office 365 instances, make sure you connect manually before running the script. If you need help connecting PowerShell to Exchange Online, follow the steps in this article: https://technet.microsoft.com/en-us/library/jj984289(v=exchg.160).aspx
 
-When fetching Exchange data, the script will use Invoke-Command to get a minimum set of attributes returned in order to speed up execution. To avoid throttling, some artificial delay is added upon executiong the removal process for each user. If needed, adjust lines 98 and 128 accordingly.
+When fetching Exchange data, the script will use Invoke-Command to get a minimum set of attributes returned in order to speed up execution. To avoid throttling, some artificial delay is added upon executing the removal process for each user. If needed, adjust lines 98 and 128 accordingly.
 
 The removal action is performed via the Remove-MailboxPermission cmdlet. The script can be dot-sourced to expose it for use in other scripts. Additional function is used to handle connectivity checks. Parameters are passed via splatting, here's an example usage:
 

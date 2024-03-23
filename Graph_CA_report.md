@@ -6,11 +6,11 @@ In order to use the script, you will need to first configure some variables, fou
 
 \# Directory.Read.All to convert GUIDs to UPNs or display names as needed
 
-After creating the application and granting the permissions, copy the key/secret and use it to configure the $client_secred variable. If you need more help understanding all the concepts mentioned above, start with [this article](https://docs.microsoft.com/en-us/graph/auth/auth-concepts).
+After creating the application and granting the permissions, copy the key/secret and use it to configure the $client_secret variable. If you need more help understanding all the concepts mentioned above, start with [this article](https://docs.microsoft.com/en-us/graph/auth/auth-concepts).
 
-If a token is successfuly obtained, the script will query the /beta/identity/conditionalAccess/policies Graph endpoint, fetch the results and transform it to present the details for each Conditional access policies in the console window.
+If a token is successfully obtained, the script will query the /beta/identity/conditionalAccess/policies Graph endpoint, fetch the results and transform it to present the details for each Conditional access policies in the console window.
 
-Two small helper functions are added to convert GUIDs to UPN (for user objects) or display name (for Groups and DirectoryRoles). No conversion is done for applicaitons or named locations, add the necesasry functions if needed.
+Two small helper functions are added to convert GUIDs to UPN (for user objects) or display name (for Groups and DirectoryRoles). No conversion is done for applications or named locations, add the necessary functions if needed.
 
 Output is also written to a CSV file in the script directory.
 

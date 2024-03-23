@@ -1,13 +1,13 @@
 # Office 365 Remove mailbox folder permissions recursively and in Bulk
 
-The script enumerates the default and user-created folders for one or more mailboxes and removes permissions for the specified users. The following parameters are supported: 
+The script enumerates the default and user-created folders for one or more mailboxes and removes permissions for the specified users. The following parameters are supported:
 * __Mailbox__: used to designate the mailbox on which permissions will be adjusted. Any valid Exchange mailbox identifier can be specified. Multiple delegates can be specified in a comma-separated list or array. You can also use the Identity parameter as alias. 
 * __User__: used to designate the user for which permissions will be removed. Any valid Exchange security principal can be specified, including Security groups. Multiple delegates can be specified in a comma-separated list or array. You can also use the Delegate parameter as alias. 
-* __WhatIf__: used to run the script in a “simulation” mode, without making any actual changes. Works the same way as with other Exchange cmdlets. 
-* __Verbose__: used to force the script to provide additional details on the cmdlet progress. Useful when troubleshooting issues. 
+* __WhatIf__: used to run the script in a “simulation” mode, without making any actual changes. Works the same way as with other Exchange cmdlets.
+* __Verbose__: used to force the script to provide additional details on the cmdlet progress. Useful when troubleshooting issues.
 * __Quiet__: used to suppress output to the console. By default, each added/changed permission entry will be displayed in the console, apart from saving it to the CSV file.
 
-As the full list of mailboxes and their folders needs to be cycled in order to set the permissions, the script will use Invoke-Command in order to get a minimum set of attributes returned. In case you run into throttling or connectivity errors, consider adjusting the artifical delay added on line 131.
+As the full list of mailboxes and their folders needs to be cycled in order to set the permissions, the script will use Invoke-Command in order to get a minimum set of attributes returned. In case you run into throttling or connectivity errors, consider adjusting the artificial delay added on line 131.
   
 To further reduce the time to execute the script, consider limiting the list of folders to only those you are interested in. This can be achieved by editing the $includedfolders and $excludedfolders arrays:
 ```PowerShell
@@ -31,6 +31,6 @@ You can also directly use the output of Get-Mailbox or Get-User to provide value
 ```
 By default the script outputs the results to a CSV file and also stores them in the $varFolderPermissionsRemoved variable. To suppress the Console output, use the -Quiet switch.
 
-Additional information about the script can be found in the built-in help or in [this article](https://www.michev.info/Blog/Post/2063/managing-mailbox-permissions-on-the-folder-level-in-bulk). 
+Additional information about the script can be found in the built-in help or in [this article](https://www.michev.info/Blog/Post/2063/managing-mailbox-permissions-on-the-folder-level-in-bulk).
 
 Questions and feedback are welcome.

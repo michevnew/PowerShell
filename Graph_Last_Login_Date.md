@@ -8,9 +8,9 @@ In order to use the script, you will need to first configure some variables, fou
 
 \# (optional) Directory.Read.All
 
-After creating the application and granting the permissions, copy the key/secret and use it to configure the $client_secred variable. If you need more help understanding all the concepts mentioned above, start with [this article](https://docs.microsoft.com/en-us/graph/auth/auth-concepts).
+After creating the application and granting the permissions, copy the key/secret and use it to configure the $client_secret variable. If you need more help understanding all the concepts mentioned above, start with [this article](https://docs.microsoft.com/en-us/graph/auth/auth-concepts).
 
-If a token is successfuly obtained, the script will query the /beta/users Graph endpoint, fetch the results and transform it to present the Last login date (where available) for each user.
+If a token is successfully obtained, the script will query the /beta/users Graph endpoint, fetch the results and transform it to present the Last login date (where available) for each user.
 
 If you want to export the result to CSV file, uncomment the last line.
 

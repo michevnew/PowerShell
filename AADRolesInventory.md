@@ -10,4 +10,4 @@ Additional information about the script can be found at: https://www.michev.info
  
 Questions and feedback are welcome.
 
-Dont forget that admin roles are only one of the ways permissions can be granted in Azure AD/Office 365. If you want a comprehensive inventory, make sure to cover any workload-specific controls, as well as application permissions. With regards to this, the script goes hand to hand with the Azure AD Integrated Applications Inventory one: https://github.com/michevnew/PowerShell/blob/master/app_Permissions_inventory.ps1
+Do not forget that admin roles are only one of the ways permissions can be granted in Azure AD/Office 365. If you want a comprehensive inventory, make sure to cover any workload-specific controls, as well as application permissions. With regards to this, the script goes hand to hand with the Azure AD Integrated Applications Inventory one: https://github.com/michevnew/PowerShell/blob/master/app_Permissions_inventory.ps1
