@@ -9,7 +9,7 @@ The script enumerates the default and user-created folders for one or more mailb
 * __Verbose__: used to force the script to provide additional details on the cmdlet progress. Useful when troubleshooting issues.
 * __Quiet__: used to suppress output to the console. By default, each added/changed permission entry will be displayed in the console, apart from saving it to the CSV file.
 
-As the full list of mailboxes and their folders needs to be cycled in order to set the permissions, the script will use Invoke-Command in order to get a minimum set of attributes returned. In case you run into throttling or connectivity errors, consider adjusting the artifical delay added on line 152.
+As the full list of mailboxes and their folders needs to be cycled in order to set the permissions, the script will use Invoke-Command in order to get a minimum set of attributes returned. In case you run into throttling or connectivity errors, consider adjusting the artificial delay added on line 152.
 
 To further reduce the time to execute the script, consider limiting the list of folders to only those you are interested in. This can be achieved by editing the $includedfolders and $excludedfolders arrays: 
 ```PowerShell

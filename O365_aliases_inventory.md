@@ -2,7 +2,7 @@
 
 The script enumerates email and non-email addresses (aliases) for all recipients of the specified type(s). Running the script without any parameter will return aliases for User mailboxes only. Use the switches to include other recipient types, or use the -IncludeAll to return all aliases across all supported recipient types. See lines 33-48 for the relevant parameters and their description.
 
-SMTP and X500 aliases are included by default. If you also want to include SIP aliases, use the -IncludeSIPAliases parameter. Similarly, to include the SPO aliases, use the -IncludeSPOAliases   parameter. For any mail user/mail contact objects, the ExternalEmailAddress atribute is also included.
+SMTP and X500 aliases are included by default. If you also want to include SIP aliases, use the -IncludeSIPAliases parameter. Similarly, to include the SPO aliases, use the -IncludeSPOAliases   parameter. For any mail user/mail contact objects, the ExternalEmailAddress attribute is also included.
 
 The script will use Invoke-Command to get a minimum set of attributes returned in order to speed up execution. If additional attributes are required, they need to be added to the relevant script block first (line 77). Since the UserPrincipalName attribute is not exposed via Get-Recipient, the script uses the WindowsLiveID attribute as a workaround.
 

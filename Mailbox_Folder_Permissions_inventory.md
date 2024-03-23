@@ -2,7 +2,7 @@
 
 UPDATED FEB 2022: Agustin Gallegos was kind enough to update the script to use the new REST-based Exchange Online cmdlets. While this breaks compatibility with on-premises installs, the original cmdlets can still be found in the code - uncomment them if you are trying to use the script against Exchange server. Do note that the previous version of the script was also incompatible with Exchange server due to the change in output made in ExO. See below.
 
-UPDATED APR 2020: Microsoft changed the output of the Get-MailboxFolderPermission in the service, it no longer returns the RecucedRecipient object but instead a PermissionSecurityPrincipal object. I've adjusted the script accodrdingly, but this mean it will no longer run as expected against on-opremises installs. You can change it manually:
+UPDATED APR 2020: Microsoft changed the output of the Get-MailboxFolderPermission in the service, it no longer returns the RecucedRecipient object but instead a PermissionSecurityPrincipal object. I've adjusted the script accordingly, but this mean it will no longer run as expected against on-premises installs. You can change it manually:
 
 $entry.User.RecipientPrincipal.PrimarySmtpAddress.ToString() <-> $entry.User.ADRecipient.PrimarySmtpAddress.ToString()
 
@@ -14,7 +14,7 @@ As the full list of mailboxes and their folders needs to be cycled in order to g
 
 The script does not handle connectivity to Exchange Online, due to the variety of methods now available. If any existing session is detected, it will be used to run the script, otherwise an error will be thrown. If you need help connecting PowerShell to Exchange Online, follow the steps in this article: https://technet.microsoft.com/en-us/library/jj984289(v=exchg.160).aspx
 
-The script includes a single cmdlet, Get-MailboxFolderPermissionInventory, and can be dot-sourced to expose it for use in other scripts. Parameters are passed via splatting, here's an example usage: 
+The script includes a single cmdlet, Get-MailboxFolderPermissionInventory, and can be dot-sourced to expose it for use in other scripts. Parameters are passed via splatting, here's an example usage:
 ```PowerShell
 .\Mailbox_Folder_Permissions_inventory.ps1 -IncludeUserMailboxes
 ```
@@ -29,7 +29,7 @@ Default permission entries are not included in the report when invoking the scri
 ```
 If you want to use "condensed" output, limited to one line per mailbox folder, specify the -CondensedOutput switch. By default, "expanded" output is used, with one line per each permission entry, including the default permissions.
 
-If the script fails too often due to connectivity issues, you can consider uncommenting lines 145 and 170 to force the script to write to the CSV file after each iteration. Removing the comment mark from line 101 will add small delay between interations in order to avoid throttling.
+If the script fails too often due to connectivity issues, you can consider uncommenting lines 145 and 170 to force the script to write to the CSV file after each iteration. Removing the comment mark from line 101 will add small delay between iterations in order to avoid throttling.
 
 To further reduce the time to execute the script, consider limiting the list of folders to only those you are interested in. This can be achieved by editing the $includedfolders and $excludedfolders arrays:
 ```PowerShell

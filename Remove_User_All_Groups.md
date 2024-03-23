@@ -5,19 +5,19 @@ By default, the script only covers Exchange related groups: Distribution groups 
 
 The script will detect and reuse any existing sessions to Exchange Online and/or Azure AD. Basic functionality to facilitate a new connection is also included, but it does not cover all possible scenarios. If you are using an MFA-protected account or any of the non-MT Office 365 instances, make sure you connect manually before running the script. If you need help connecting PowerShell to Exchange Online, follow the steps in this article: https://technet.microsoft.com/en-us/library/jj984289(v=exchg.160).aspx
 
-When fetching Exchange data, the script will use Invoke-Command to get a minimum set of attributes returned in order to speed up execution. To avoid throttling, some artificial delay is added upon executiong the removal process for each user. If needed, adjust lines 104 and 117 accordingly.
+When fetching Exchange data, the script will use Invoke-Command to get a minimum set of attributes returned in order to speed up execution. To avoid throttling, some artificial delay is added upon executing the removal process for each user. If needed, adjust lines 104 and 117 accordingly.
 
-The removal action is performed via the Remove-UserFromAllGroups cmdlet. The script can be dot-sourced to expose it for use in other scripts. Additional function is used to handle connectivity checks. Parameters are passed via splatting, here's an example usage: 
+The removal action is performed via the Remove-UserFromAllGroups cmdlet. The script can be dot-sourced to expose it for use in other scripts. Additional function is used to handle connectivity checks. Parameters are passed via splatting, here's an example usage:
 
 ```powershell
 .\Remove_User_All_Groups.ps1 -Identity leaver
 ```
-The following example will remove two users, userA and userB from all types of groups: 
+The following example will remove two users, userA and userB from all types of groups:
 
 ```powershell
 .\Remove_User_All_Groups.ps1 -Identity UserA,UserB -IncludeAADSecurityGroups -IncludeOffice365Groups
 ```
-You can also pass values for the Identity parameter over the pipeline. To avoid potential errors, it's recommended to first run the script with the -WhatIf parameter in such scenarios: 
+You can also pass values for the Identity parameter over the pipeline. To avoid potential errors, it's recommended to first run the script with the -WhatIf parameter in such scenarios:
 
 ```powershell
 Get-User -Filter {CountryOrRegion -eq "US"} | Remove-UserFromAllGroups -IncludeAADSecurityGroups -IncludeOffice365Groups -WhatIf -Verbose
