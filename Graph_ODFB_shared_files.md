@@ -10,7 +10,7 @@ In order to use the script, you will need to first configure some variables, fou
 
 \#    (optional) Directory.Read.All to obtain a domain list and check whether an item is shared externally
 
-After creating the application and granting the permissions, copy the key/secret and use it to configure the $client_secred variable. If you need more help understanding all the concepts mentioned above, start with [this article](https://docs.microsoft.com/en-us/graph/auth/auth-concepts).
+After creating the application and granting the permissions, copy the key/secret and use it to configure the $client_secret variable. If you need more help understanding all the concepts mentioned above, start with [this article](https://docs.microsoft.com/en-us/graph/auth/auth-concepts).
 
 The script has two optional parameters you can use. The -ExpandFolders switch instructs it to enumerate files in any (sub)folders found under the root, and the -Depth parameter controls how deep the expansion is. The default value is 0, so only the top-most set of folders will be expanded. Use this parameter with care, while I've tested the script with few thousand items in multiple nested folders, I cannot guarantee it will work in all scenarios.
 

@@ -1,6 +1,6 @@
 # Office 365 Calendar Permissions Inventory
 
-UPDATED APR 2020: Microsoft changed the output of the Get-MailboxFolderPermission in the service, it no longer returns the RecucedRecipient object but instead a PermissionSecurityPrincipal object. I've adjusted the script accodrdingly, but this mean it will no longer run as expected against on-opremises installs. You can change it manually: 
+UPDATED APR 2020: Microsoft changed the output of the Get-MailboxFolderPermission in the service, it no longer returns the ReducedRecipient object but instead a PermissionSecurityPrincipal object. I've adjusted the script accordingly, but this mean it will no longer run as expected against on-premises installs. You can change it manually: 
 
 $entry.User.RecipientPrincipal.PrimarySmtpAddress.ToString() <-> $entry.User.ADRecipient.PrimarySmtpAddress.ToString()
 
@@ -22,7 +22,7 @@ $var | Export-Csv -NoTypeInformation "CalendarPermissions.csv"
 ```
 If you want to use "condensed" output, limited to one line per mailbox, specify the -CondensedOutput switch. By default, "expanded" output is used, with one line per each permission entry, including the default permissions.
  
-If the script fails too often due to connectivity issues, you can consider uncommenting lines 115 and 140 to force the script to write to the CSV file after each iteration. Removing the comment mark from line 71 will add small delay between interations in order to avoid throttling.
+If the script fails too often due to connectivity issues, you can consider uncommenting lines 115 and 140 to force the script to write to the CSV file after each iteration. Removing the comment mark from line 71 will add small delay between iterations in order to avoid throttling.
 
 Additional information about the script can be found at: https://www.michev.info/blog/post/3676/office-365-permission-inventory-calendar-permissions-2
 
