@@ -1,13 +1,16 @@
 #Requires -Version 3.0
-#Make sure to fill in all the required variables before running the script (lines 707-709)
-#Also make sure the AppID used corresponds to an app with sufficient permissions, as follows:
+#Requires -Modules @{ ModuleName="Microsoft.Graph.Groups"; ModuleVersion="2.17.0" }
+#Requires -Modules @{ ModuleName="Microsoft.Graph.Users"; ModuleVersion="2.17.0" }
+#Requires -Modules @{ ModuleName="ExchangeOnlineManagement"; ModuleVersion="3.0.0" }
+
+#The following permission are required for the script to work:
 #    Directory.Read.All (to ensure best results with /memberOf and /ownedObjects)
 #    Group.ReadWrite.All (for removal of group members/owners)
-#    RoleManagement.ReadWrite.Directory (for removal of Directory roles) #NOT covered by Directory.ReadWrite.all
+#    RoleManagement.ReadWrite.Directory (for removal of Directory roles) #NOT covered by Directory.ReadWrite.All
 #    DelegatedPermissionGrant.ReadWrite.All (for removal of OAuth2PermissionGrants)
 #    AdministrativeUnit.ReadWrite.All (for removal of members of Administrative Units)
-#    Application.ReadWrite.All (for removal of application/service principal owners) #This one is a must if processing Apps, even Directory.ReadWrite.all on its own does NOT work
-#    Exchange.ManageAsApp and the Exchange administrator role assigned to the service principal (for processing Exchange objects)
+#    Application.ReadWrite.All (for removal of application/service principal owners) #This one is a must if processing Apps, even Directory.ReadWrite.All on its own does NOT work
+#    Exchange administrator (for processing Exchange objects)
 
 #For details on what the script does and how to run it, check: https://www.michev.info/blog/post/6062/remove-user-from-all-microsoft-365-groups-and-roles-and-more-via-the-graph-api-non-interactive
 
@@ -27,47 +30,6 @@ Param([Parameter(Position=0,Mandatory)][ValidateNotNullOrWhiteSpace()][Alias("Id
 # Helper functions
 #==========================================================================
 
-#Obtain an access token(s) or renew it if needed
-function Renew-Token {
-    param(
-    [ValidateNotNullOrEmpty()][string]$Service
-    )
-
-    #prepare the request
-    $url = 'https://login.microsoftonline.com/' + $tenantId + '/oauth2/v2.0/token'
-
-    #Define the scope based on the service value provided
-    if (!$Service -or $Service -eq "Graph") { $Scope = "https://graph.microsoft.com/.default" }
-    elseif ($Service -eq "Exchange") { $Scope = "https://outlook.office365.com/.default" }
-    else { Write-Error "Invalid service specified, aborting..." -ErrorAction Stop; return }
-
-    $Scopes = New-Object System.Collections.Generic.List[string]
-    $Scopes.Add($Scope)
-
-    $body = @{
-        grant_type = "client_credentials"
-        client_id = $appID
-        client_secret = $client_secret
-        scope = $Scopes
-    }
-
-    try {
-        $authenticationResult = Invoke-WebRequest -Method Post -Uri $url -Body $body -ErrorAction Stop -Verbose:$false
-        $token = ($authenticationResult.Content | ConvertFrom-Json).access_token
-    }
-    catch { $_; return }
-
-    if (!$token) { Write-Error "Failed to aquire token!" -ErrorAction Stop; return }
-    else {
-        Write-Verbose "Successfully acquired Access Token for $service"
-
-        #Use the access token to set the authentication header
-        if (!$Service -or $Service -eq "Graph") { Set-Variable -Name authHeaderGraph -Scope Global -Value @{'Authorization'="Bearer $token";'Content-Type'='application/json'} -Confirm:$false -WhatIf:$false }
-        elseif ($Service -eq "Exchange") { Set-Variable -Name authHeaderExchange -Scope Global -Value @{'Authorization'="Bearer $token";'Content-Type'='application/json'} -Confirm:$false -WhatIf:$false }
-        else { Write-Error "Invalid service specified, aborting..." -ErrorAction Stop; return }
-    }
-}
-
 #Function to resolve Exceptions values, remove incomplete entries, remove duplicates, etc
 #Needs Directory.Read.All
 function Process-Exceptions {
@@ -79,16 +41,8 @@ function Process-Exceptions {
     $EGUIDs = $Exceptions | sort -Unique | ? {$_.ToLower() -match "^[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}$"}
     if (!$EGUIDs) { return }
 
-    #Make sure a matching object is found and return its type. We use the getByIds method to avoid multiple calls. Because of this, exceptions will not apply to some Exchange scenarios.
-    $uri = "https://graph.microsoft.com/v1.0/directoryObjects/getByIds"
-    $body = @{
-        "ids" = @($EGUIDs)
-        "types" = @("group","directoryRole","administrativeUnit","application","servicePrincipal") #We don't care about other types
-    }
-
     try {
-        $result = Invoke-WebRequest -Uri $uri -Method Post -Body ($body | ConvertTo-Json) -Headers $authHeaderGraph -ContentType "application/json" -Verbose:$false -ErrorAction Stop
-        $result = ($result.Content | ConvertFrom-Json).value | Select-Object '@odata.type',Id
+        $result = Get-MgDirectoryObjectById -Ids $EGUIDs -Types @("group","directoryRole","administrativeUnit","application","servicePrincipal") -Verbose:$false -ErrorAction Stop
     }
     catch {
         Process-Error -ErrorMessage $_ -User $user -Group "N/A"
@@ -101,6 +55,7 @@ function Process-Exceptions {
     return $EGUIDs
 }
 
+#THIS ONE NEEDS TO BE REWORKED!!!
 #Function to handle errors
 function Process-Error {
     param(
@@ -119,13 +74,12 @@ function Process-Error {
     #ExO throws a 401 with no ErrorMessage... no way to differentiate from generirc permission-related issues
     elseif ($ErrorMessage.ErrorDetails.Message -match "Lifetime validation failed, the token is expired|Access token has expired") {
         Write-Warning "Access token has expired, renewing it..."
-        $global:authHeaderGraph = $null; $global:authHeaderExchange = $null
 
-        Renew-Token -Service "Graph"
-        if ($ProcessExchangeGroups) { Renew-Token -Service "Exchange" }
+        Connect-MgGraph -NoWelcome
+        if ($ProcessExchangeGroups) { Connect-ExchangeOnline -ShowBanner:$false -ShowProgress:$false -SkipLoadingFormatData -CommandName "Get-Group","Get-DistributionGroup","Remove-RoleGroupMember","Remove-DistributionGroupMember","Get-ManagementRoleAssignment","Remove-ManagementRoleAssignment" -Verbose:$false -ErrorAction Stop }
 
-        if (!$authHeaderGraph) { Write-Error "Failed to renew token, aborting..." -ErrorAction Stop }
-        if ($ProcessExchangeGroups -and !$authHeaderExchange) { Write-Error "Failed to renew token, aborting..." -ErrorAction Stop }
+        if (!(Get-MgContext)) { Write-Error "Failed to renew token, aborting..." -ErrorAction Stop }
+        if ($ProcessExchangeGroups -and !(Get-ConnectionInformation)) { Write-Error "Failed to renew token, aborting..." -ErrorAction Stop }
     }
     #The rest are non-terminal errors
     elseif ($ErrorMessage.ErrorDetails.Message -match "Cannot Update a mail-enabled security groups and or distribution list.") {
@@ -180,14 +134,8 @@ function Get-Membership {
     )
 
     $MemberOf = @()
-    $uri = "https://graph.microsoft.com/v1.0/users/$User/memberOf?`$select=id,displayName,groupTypes,securityEnabled,mailEnabled,onPremisesSyncEnabled,isAssignableToRole"
     try {
-        do {
-            $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -ErrorAction Stop -Verbose:$false
-            $uri = $result.'@odata.nextLink'
-
-            $MemberOf += ($result.Content | ConvertFrom-Json).value
-        } while ($uri)
+        $MemberOf = Get-MgUserMemberOf -UserId $User -All -Property id,displayName,groupTypes,securityEnabled,mailEnabled,onPremisesSyncEnabled,isAssignableToRole -Verbose:$false -ErrorAction Stop
     }
     catch {
         Process-Error -ErrorMessage $_ -User $user -Group "N/A"
@@ -206,14 +154,10 @@ function Get-Ownership {
     )
 
     $OwnerOf = @()
-    $uri = "https://graph.microsoft.com/v1.0/users/$User/ownedObjects?`$select=id,displayName,groupTypes,securityEnabled,mailEnabled,onPremisesSyncEnabled,isAssignableToRole"
     try {
-        do {
-            $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -ErrorAction Stop -Verbose:$false
-            $uri = $result.'@odata.nextLink'
-
-            $OwnerOf += ($result.Content | ConvertFrom-Json).value
-        } while ($uri)
+        $result = Get-MgUserOwnedObject -UserId $User -All -Property id,displayName,groupTypes,securityEnabled,mailEnabled,onPremisesSyncEnabled,isAssignableToRole -Verbose:$false -ErrorAction Stop
+        #return only supported object types
+        $OwnerOf = $result | ? {($_.AdditionalProperties.'@odata.type' -eq "#microsoft.graph.group") -or ($_.AdditionalProperties.'@odata.type' -eq "#microsoft.graph.servicePrincipal") -or ($_.AdditionalProperties.'@odata.type' -eq "#microsoft.graph.application")}
     }
     catch {
         Process-Error -ErrorMessage $_ -User $user -Group "N/A"
@@ -222,8 +166,7 @@ function Get-Ownership {
         return
     }
 
-    #return only supported object types
-    $OwnerOf | ? {($_.'@odata.type' -eq "#microsoft.graph.group") -or ($_.'@odata.type' -eq "#microsoft.graph.servicePrincipal") -or ($_.'@odata.type' -eq "#microsoft.graph.application")}
+    $OwnerOf
 }
 
 #Needs DelegatedPermissionGrant.ReadWrite.All
@@ -237,19 +180,13 @@ function Process-OAuthGrants {
     Write-Verbose "Processing oauth2PermissionGrants for user $user..."
     $uri = "https://graph.microsoft.com/v1.0/users/$user/oauth2PermissionGrants?`$select=id,clientId,principalId,consentType,resourceId,scope"
     try {
-        do {
-            $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop
-            $uri = $result.'@odata.nextLink'
-
-            $OAuthGrants += ($result.Content | ConvertFrom-Json).value
-        } while ($uri)
+        $OAuthGrants = Get-MgUserOauth2PermissionGrant -UserId $User -All -Property id,clientId,principalId,consentType,resourceId,scope -Verbose:$false -ErrorAction Stop
 
         if ($OAuthGrants) {
             foreach ($Grant in $OAuthGrants) {
                 Write-Verbose "Removing oauth2PermissionGrant $($Grant.id) for user $user..."
                 if ($PSCmdlet.ShouldProcess("Grant $($Grant.Id) for user ""$user""")) {
-                    $uri = "https://graph.microsoft.com/v1.0/oauth2PermissionGrants/$($Grant.id)"
-                    $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop #suppress the output
+                    $result = Remove-MgOauth2PermissionGrant -OAuth2PermissionGrantId $Grant.Id -Verbose:$false -ErrorAction Stop #suppress the output
                     Process-Output -Output @{"User" = $user;"Group" = "[$($Grant.resourceId)]:$($Grant.scope)";"ObjectType" = "OAuth2PermissionGrant";"Result" = "Success"} -Message "Successfully removed oauth2PermissionGrant $($Grant.id) for user $user."
                 }
                 else { Process-Output -Output @{"User" = $user;"Group" = "[$($Grant.resourceId)]:$($Grant.scope)";"ObjectType" = "OAuth2PermissionGrant";"Result" = "Skipped due to Confirm process"} -Message "Skipped removal of oauth2PermissionGrant $($Grant.id) for user $user." }
@@ -276,9 +213,8 @@ function Set-SubstituteOwner {
     $body = @{
         "@odata.id" = "https://graph.microsoft.com/v1.0/users/$SubstituteOwner"
     }
-    $uri = "https://graph.microsoft.com/v1.0/groups/$($Group.id)/owners/`$ref"
     try {
-        $result = Invoke-WebRequest -Method POST -Uri $uri -Body ($body | ConvertTo-Json) -Headers $authHeaderGraph -ContentType "application/json" -Verbose:$false -ErrorAction Stop #suppress the output
+        $result = New-MgGroupOwnerByRef -GroupId $Group.Id -BodyParameter ($body | ConvertTo-Json) -Verbose:$false -ErrorAction Stop #suppress the output
         Process-Output -Output @{"User" = "$SubstituteOwner";"Group" = "[Owner] $($Group.displayName)";"ObjectType" = "Group";"Result" = "Success (Owner add)"} -Message "Successfully added Owner $SubstituteOwner to Group ""$($Group.displayName)""."
     }
     catch {
@@ -296,21 +232,15 @@ function Process-ScopedRoles {
 
     $ScopedRoles = @()
     Write-Verbose "Processing scoped Directory role assignments for user $user..."
-    $uri = "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments?`$filter=principalid eq `'$user`'"
     try {
-        do {
-            $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop
-            $uri = $result.'@odata.nextLink'
-
-            $ScopedRoles += ($result.Content | ConvertFrom-Json).value | ? {$_.directoryScopeId -ne "/"}
-        } while ($uri)
+        $result = Get-MgRoleManagementDirectoryRoleAssignment -Filter "principalid eq `'$user`'"
+        $ScopedRoles = $result | ? {$_.directoryScopeId -ne "/"}
 
         if ($ScopedRoles) {
             foreach ($Role in $ScopedRoles) {
                 Write-Verbose "Removing scoped role assignment $($Role.id) for user $user..."
                 if ($PSCmdlet.ShouldProcess("Scoped role assignment $($Role.Id) for user ""$user""")) {
-                    $uri = "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments/$($Role.id)"
-                    $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop #suppress the output
+                    $result = Remove-MgRoleManagementDirectoryRoleAssignment -UnifiedRoleAssignmentId $Role.Id -Verbose:$false -ErrorAction Stop #suppress the output
                     Process-Output -Output @{"User" = $user;"Group" = "[$($Role.directoryScopeId)]:$($Role.roleDefinitionId)";"ObjectType" = "Scoped Directory role assignment";"Result" = "Success"} -Message "Successfully removed scoped Directory role assignment $($Role.id) for user $user."
                 }
                 else { Process-Output -Output @{"User" = $user;"Group" = "[$($Role.directoryScopeId)]:$($Role.roleDefinitionId)";"ObjectType" = "Scoped Directory role assignment";"Result" = "Skipped due to Confirm process"} -Message "Skipped removal of scoped Directory role assignment $($Role.id) for user $user." }
@@ -335,14 +265,8 @@ function Process-EligibleRoles {
 
     $EligibleRoles = @()
     Write-Verbose "Processing eligible Directory role assignments for user $user..."
-    $uri = "https://graph.microsoft.com/beta/roleManagement/directory/roleEligibilitySchedules?`$filter=principalId eq `'$user`' and memberType eq 'Direct'"
     try {
-        do {
-            $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop
-            $uri = $result.'@odata.nextLink'
-
-            $EligibleRoles += ($result.Content | ConvertFrom-Json).value
-        } while ($uri)
+        $EligibleRoles = Get-MgRoleManagementDirectoryRoleEligibilitySchedule -Filter "principalId eq `'$user`' and memberType eq 'Direct'"
 
         if ($EligibleRoles) {
             foreach ($Role in $EligibleRoles) {
@@ -356,8 +280,7 @@ function Process-EligibleRoles {
                     Justification = "Removed by script"
                 }
                 if ($PSCmdlet.ShouldProcess("Eligible role assignment $($Role.Id) for user ""$user""")) {
-                    $uri = "https://graph.microsoft.com/v1.0/roleManagement/directory/roleEligibilityScheduleRequests"
-                    $result = Invoke-WebRequest -Method Post -Body ($body | ConvertTo-Json) -Uri $uri -Headers $authHeaderGraph -ContentType "application/json" -Verbose:$false -ErrorAction Stop #suppress the output
+                    $result = New-MgRoleManagementDirectoryRoleEligibilityScheduleRequest -BodyParameter ($body | ConvertTo-Json) -Verbose:$false -ErrorAction Stop #suppress the output
                     Process-Output -Output @{"User" = $user;"Group" = "[$($Role.directoryScopeId)]:$($Role.roleDefinitionId)";"ObjectType" = "Eligible Directory role assignment";"Result" = "Success"} -Message "Successfully removed Eligible Directory role assignment $($Role.id) for user $user."
                 }
                 else { Process-Output -Output @{"User" = $user;"Group" = "[$($Role.directoryScopeId)]:$($Role.roleDefinitionId)";"ObjectType" = "Eligible Directory role assignment";"Result" = "Skipped due to Confirm process"} -Message "Skipped removal of Eligible Directory role assignment $($Role.id) for user $user." }
@@ -385,25 +308,24 @@ function Remove-RoleMembership {
     foreach ($Role in $Roles) {
         #Skip Exception Roles
         if ($Role.id -in $ExceptionsList) {
-            Process-Output -Output @{"User" = $user;"Group" = "$($Role.displayName)";"ObjectType" = "Directory role";"Result" = "Skipped due to exception"} -Message "Role ""$($Role.displayName)"" is in the exception list, skipping..."
+            Process-Output -Output @{"User" = $user;"Group" = "$($Role.AdditionalProperties.displayName)";"ObjectType" = "Directory role";"Result" = "Skipped due to exception"} -Message "Role ""$($Role.AdditionalProperties.displayName)"" is in the exception list, skipping..."
             continue
         }
 
         #Do the removal
-        Write-Verbose "Removing user $User from role ""$($Role.displayName)""..."
-        if ($PSCmdlet.ShouldProcess("User $User from role ""$($Role.displayName)""")) {
-            $uri = "https://graph.microsoft.com/v1.0/directoryRoles/$($Role.id)/members/$User/`$ref"
+        Write-Verbose "Removing user $User from role ""$($Role.AdditionalProperties.displayName)""..."
+        if ($PSCmdlet.ShouldProcess("User $User from role ""$($Role.AdditionalProperties.displayName)""")) {
             try {
-                $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop #suppress the output
-                Process-Output -Output @{"User" = $user;"Group" = "$($Role.displayName)";"ObjectType" = "Directory role";"Result" = "Success"} -Message "Successfully removed user $User from role ""$($Role.displayName)""."
+                $result = Remove-MgDirectoryRoleMemberDirectoryObjectByRef -DirectoryRoleId $Role.Id -DirectoryObjectId $User -Verbose:$false -ErrorAction Stop #suppress the output
+                Process-Output -Output @{"User" = $user;"Group" = "$($Role.AdditionalProperties.displayName)";"ObjectType" = "Directory role";"Result" = "Success"} -Message "Successfully removed user $User from role ""$($Role.AdditionalProperties.displayName)""."
             }
             catch {
-                Process-Error -ErrorMessage $_ -Group $Role.displayName -User $User
-                Process-Output -Output @{"User" = $user;"Group" = "$($Role.displayName)";"ObjectType" = "Directory role";"Result" = "Failed"} -Message "Failed to remove user $User from role ""$($Role.displayName)""."
+                Process-Error -ErrorMessage $_ -Group $Role.AdditionalProperties.displayName -User $User
+                Process-Output -Output @{"User" = $user;"Group" = "$($Role.AdditionalProperties.displayName)";"ObjectType" = "Directory role";"Result" = "Failed"} -Message "Failed to remove user $User from role ""$($Role.AdditionalProperties.displayName)""."
                 continue
             }
         }
-        else { Process-Output -Output @{"User" = $user;"Group" = "$($Role.displayName)";"ObjectType" = "Directory role";"Result" = "Skipped due to Confirm process"} -Message "Skipping removal of user $user from role ""$($Role.displayName)""." }
+        else { Process-Output -Output @{"User" = $user;"Group" = "$($Role.AdditionalProperties.displayName)";"ObjectType" = "Directory role";"Result" = "Skipped due to Confirm process"} -Message "Skipping removal of user $user from role ""$($Role.AdditionalProperties.displayName)""." }
     }
 }
 
@@ -419,31 +341,30 @@ function Remove-AUMembership {
     foreach ($AU in $AUs) {
         #Skip Exception AUs
         if ($AU.id -in $ExceptionsList) {
-            Process-Output -Output @{"User" = $user;"Group" = "$($AU.displayName)";"ObjectType" = "Administrative unit";"Result" = "Skipped due to exception"} -Message "Administrative Unit ""$($AU.displayName)"" is in the exception list, skipping..."
+            Process-Output -Output @{"User" = $user;"Group" = "$($AU.AdditionalProperties.displayName)";"ObjectType" = "Administrative unit";"Result" = "Skipped due to exception"} -Message "Administrative Unit ""$($AU.AdditionalProperties.displayName)"" is in the exception list, skipping..."
             continue
         }
 
         #Skip Dynamic AUs
         if ($AU.membershipType -eq "Dynamic") {
-            Process-Output -Output @{"User" = $user;"Group" = "$($AU.displayName)";"ObjectType" = "Administrative unit";"Result" = "Skipped due to dynamic membership"} -Message "Administrative Unit ""$($AU.displayName)"" is using dynamic membership, skipping..."
+            Process-Output -Output @{"User" = $user;"Group" = "$($AU.AdditionalProperties.displayName)";"ObjectType" = "Administrative unit";"Result" = "Skipped due to dynamic membership"} -Message "Administrative Unit ""$($AU.AdditionalProperties.displayName)"" is using dynamic membership, skipping..."
             continue
         }
 
         #Do the removal
-        Write-Verbose "Removing user $User from Administrative Unit ""$($AU.displayName)""..."
-        if ($PSCmdlet.ShouldProcess("User $User from Administrative Unit ""$($AU.displayName)""")) {
-            $uri = "https://graph.microsoft.com/v1.0/administrativeUnits/$($AU.id)/members/$User/`$ref"
+        Write-Verbose "Removing user $User from Administrative Unit ""$($AU.AdditionalProperties.displayName)""..."
+        if ($PSCmdlet.ShouldProcess("User $User from Administrative Unit ""$($AU.AdditionalProperties.displayName)""")) {
             try {
-                $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop #suppress the output
-                Process-Output -Output @{"User" = $user;"Group" = "$($AU.displayName)";"ObjectType" = "Administrative unit";"Result" = "Success"} -Message "Successfully removed user $User from Administrative Unit ""$($AU.displayName)""."
+                $result = Remove-MgDirectoryAdministrativeUnitMemberDirectoryObjectByRef -AdministrativeUnitId $AU.Id -DirectoryObjectId $User -Verbose:$false -ErrorAction Stop #suppress the output
+                Process-Output -Output @{"User" = $user;"Group" = "$($AU.AdditionalProperties.displayName)";"ObjectType" = "Administrative unit";"Result" = "Success"} -Message "Successfully removed user $User from Administrative Unit ""$($AU.AdditionalProperties.displayName)""."
             }
             catch {
-                Process-Error -ErrorMessage $_ -Group $AU.displayName -User $User
-                Process-Output -Output @{"User" = $user;"Group" = "$($AU.displayName)";"ObjectType" = "Administrative unit";"Result" = "Failed"} -Message "Failed to remove user $User from Administrative Unit ""$($AU.displayName)""."
+                Process-Error -ErrorMessage $_ -Group $AU.AdditionalProperties.displayName -User $User
+                Process-Output -Output @{"User" = $user;"Group" = "$($AU.AdditionalProperties.displayName)";"ObjectType" = "Administrative unit";"Result" = "Failed"} -Message "Failed to remove user $User from Administrative Unit ""$($AU.AdditionalProperties.displayName)""."
                 continue
             }
         }
-        else { Process-Output -Output @{"User" = $user;"Group" = "$($AU.displayName)";"ObjectType" = "Administrative unit";"Result" = "Skipped due to Confirm process"} -Message "Skipping removal of user $user from Administrative Unit ""$($AU.displayName)""." }
+        else { Process-Output -Output @{"User" = $user;"Group" = "$($AU.AdditionalProperties.displayName)";"ObjectType" = "Administrative unit";"Result" = "Skipped due to Confirm process"} -Message "Skipping removal of user $user from Administrative Unit ""$($AU.AdditionalProperties.displayName)""." }
     }
 }
 
@@ -462,33 +383,33 @@ function Remove-Ownership {
     #Process each group
     foreach ($Group in $Groups) {
         #Determine the endpoint based on the object type
-        $endpoint = switch ($($Group.'@odata.type')) {
-            "#microsoft.graph.group" { "groups" }
-            "#microsoft.graph.servicePrincipal" { "servicePrincipals" }
-            "#microsoft.graph.application" { "applications" }
+        $cmdlet = switch ($($Group.AdditionalProperties.'@odata.type')) {
+            "#microsoft.graph.group" { "Remove-MgGroupOwnerDirectoryObjectByRef -GroupId $($Group.Id)" }
+            "#microsoft.graph.servicePrincipal" { "Remove-MgServicePrincipalOwnerDirectoryObjectByRef -ServicePrincipalId $($Group.Id)" }
+            "#microsoft.graph.application" { "Remove-MgApplicationOwnerDirectoryObjectByRef -ApplicationId $($Group.Id)" }
             Default { return } #we terminate, as we've encountered something unaccounted for
         }
+        $cmdlet += " -DirectoryObjectId $User -Verbose:`$false -ErrorAction Stop"
 
         #Skip Exception Groups
         if ($Group.id -in $ExceptionsList) {
-            Process-Output -Output @{"User" = $user;"Group" = "[Owner] $($Group.displayName)";"ObjectType" = $Group.'@odata.type'.Split(".")[-1];"Result" = "Skipped due to exception"} -Message "Object ""$($Group.displayName)"" is in the exception list, skipping..."
+            Process-Output -Output @{"User" = $user;"Group" = "[Owner] $($Group.AdditionalProperties.displayName)";"ObjectType" = $Group.AdditionalProperties.'@odata.type'.Split(".")[-1];"Result" = "Skipped due to exception"} -Message "Object ""$($Group.AdditionalProperties.displayName)"" is in the exception list, skipping..."
             continue
         }
 
         #Do the removal
-        Write-Verbose "Removing Owner $User from object ""$($Group.displayName)""..."
-        if ($PSCmdlet.ShouldProcess("Owner $User from object ""$($Group.displayName)""")) {
-            $uri = "https://graph.microsoft.com/v1.0/$endpoint/$($Group.id)/owners/$User/`$ref"
+        Write-Verbose "Removing Owner $User from object ""$($Group.AdditionalProperties.displayName)""..."
+        if ($PSCmdlet.ShouldProcess("Owner $User from object ""$($Group.AdditionalProperties.displayName)""")) {
             try {
-                $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop #suppress the output
-                Process-Output -Output @{"User" = "$user";"Group" = "[Owner] $($Group.displayName)";"ObjectType" = $Group.'@odata.type'.Split(".")[-1];"Result" = "Success (Onwer remove)"} -Message "Successfully removed Owner $User from Object ""$($Group.displayName)""."
+                $result = Invoke-Expression $cmdlet #suppress the output
+                Process-Output -Output @{"User" = "$user";"Group" = "[Owner] $($Group.AdditionalProperties.displayName)";"ObjectType" = $Group.AdditionalProperties.'@odata.type'.Split(".")[-1];"Result" = "Success (Onwer remove)"} -Message "Successfully removed Owner $User from Object ""$($Group.AdditionalProperties.displayName)""."
             }
             catch {
                 #Handle the case where the user is the only owner of the group
-                if ((Process-Error -ErrorMessage $_ -Group $Group.displayName -User $User) -eq "TrySubstituteOwner") {
+                if ((Process-Error -ErrorMessage $_ -Group $Group.AdditionalProperties.displayName -User $User) -eq "TrySubstituteOwner") {
                     #Detect recursion
                     if ($PreventRecursion) {
-                        if (!$Quiet) { Write-Warning "We already attempted to substitute the owner for the Object ""$($Group.displayName)"" and failed, skipping..." }
+                        if (!$Quiet) { Write-Warning "We already attempted to substitute the owner for the Object ""$($Group.AdditionalProperties.displayName)"" and failed, skipping..." }
                         continue
                     }
                     #Try to replace the owner with the SubstituteOwner
@@ -500,13 +421,13 @@ function Remove-Ownership {
                         Start-Sleep -Seconds 1 #wait for the change to propagate
                         Remove-Ownership -PreventRecursion -Groups @($Group) -User $User -ExceptionsList $ExceptionsList -Confirm:$false #Skip the confirmation prompt as we already asked once!
                     }
-                    catch { Process-Output -Output @{"User" = "$user";"Group" = "[Owner] $($Group.displayName)";"ObjectType" = $Group.'@odata.type'.Split(".")[-1];"Result" = "Failed (Owner remove)"} -Message "Failed to remove Owner $User from object ""$($Group.displayName)""." }
+                    catch { Process-Output -Output @{"User" = "$user";"Group" = "[Owner] $($Group.AdditionalProperties.displayName)";"ObjectType" = $Group.AdditionalProperties.'@odata.type'.Split(".")[-1];"Result" = "Failed (Owner remove)"} -Message "Failed to remove Owner $User from object ""$($Group.AdditionalPropertiesdisplayName)""." }
                 }
-                else { Process-Output -Output @{"User" = "$user";"Group" = "[Owner] $($Group.displayName)";"ObjectType" = $Group.'@odata.type'.Split(".")[-1];"Result" = "Failed (Owner remove)"} -Message "Failed to remove Owner $User from object ""$($Group.displayName)""." }
+                else { Process-Output -Output @{"User" = "$user";"Group" = "[Owner] $($Group.AdditionalProperties.displayName)";"ObjectType" = $Group.AdditionalProperties.'@odata.type'.Split(".")[-1];"Result" = "Failed (Owner remove)"} -Message "Failed to remove Owner $User from object ""$($Group.AdditionalProperties.displayName)""." }
                 continue
             }
         }
-        else { Process-Output -Output @{"User" = "$user";"Group" = "[Owner] $($Group.displayName)";"ObjectType" = $Group.'@odata.type'.Split(".")[-1];"Result" = "Skipped due to Confirm process"} -Message "Skipping removal of Owner $user from object ""$($Group.displayName)""." }
+        else { Process-Output -Output @{"User" = "$user";"Group" = "[Owner] $($Group.AdditionalProperties.displayName)";"ObjectType" = $Group.AdditionalProperties.'@odata.type'.Split(".")[-1];"Result" = "Skipped due to Confirm process"} -Message "Skipping removal of Owner $user from object ""$($Group.AdditionalProperties.displayName)""." }
     }
 }
 
@@ -521,57 +442,56 @@ function Remove-GroupMembership {
 
     foreach ($Group in $Groups) {
         #Quick fix to add the RecipientType property
-        if ($Group.mailEnabled -eq $true -and $Group.groupTypes -notcontains "Unified") { $Group | Add-Member -MemberType NoteProperty -Name "RecipientType" -Value "Exchange Group" }
+        if ($Group.AdditionalProperties.mailEnabled -eq $true -and $Group.AdditionalProperties.groupTypes -notcontains "Unified") { $Group | Add-Member -MemberType NoteProperty -Name "RecipientType" -Value "Exchange Group" }
         else { $Group | Add-Member -MemberType NoteProperty -Name "RecipientType" -Value "Group" }
 
         #Skip Exception Groups
         if ($Group.id -in $ExceptionsList) {
-            Process-Output -Output @{"User" = $user;"Group" = $Group.displayName;"ObjectType" = $Group.RecipientType;"Result" = "Skipped due to exception"} -Message "Group ""$($Group.displayName)"" is in the exception list, skipping..."
+            Process-Output -Output @{"User" = $user;"Group" = $Group.AdditionalProperties.displayName;"ObjectType" = $Group.RecipientType;"Result" = "Skipped due to exception"} -Message "Group ""$($Group.AdditionalProperties.displayName)"" is in the exception list, skipping..."
             continue
         }
 
         #Skip On-Prem Synced Groups
-        if ($Group.onPremisesSyncEnabled -eq $true) {
-            Process-Output -Output @{"User" = $user;"Group" = $Group.displayName;"ObjectType" = $Group.RecipientType;"Result" = "Skipped due to on-premises sync"} -Message "Group ""$($Group.displayName)"" is synced from on-premises, skipping..."
+        if ($Group.AdditionalProperties.onPremisesSyncEnabled -eq $true) {
+            Process-Output -Output @{"User" = $user;"Group" = $Group.AdditionalProperties.displayName;"ObjectType" = $Group.RecipientType;"Result" = "Skipped due to on-premises sync"} -Message "Group ""$($Group.AdditionalProperties.displayName)"" is synced from on-premises, skipping..."
             continue
         }
 
         #Skip Dynamic Groups
-        if ($Group.groupTypes -contains "DynamicMembership") {
-            Process-Output -Output @{"User" = $user;"Group" = $Group.displayName;"ObjectType" = $Group.RecipientType;"Result" = "Skipped due to dynamic membership"} -Message "Group ""$($Group.displayName)"" is using dynamic membership, skipping..."
+        if ($Group.AdditionalProperties.groupTypes -contains "DynamicMembership") {
+            Process-Output -Output @{"User" = $user;"Group" = $Group.AdditionalProperties.displayName;"ObjectType" = $Group.RecipientType;"Result" = "Skipped due to dynamic membership"} -Message "Group ""$($Group.AdditionalProperties.displayName)"" is using dynamic membership, skipping..."
             continue
         }
 
         #Do the removal
-        Write-Verbose "Removing user $User from group ""$($Group.displayName)""..."
-        if ($PSCmdlet.ShouldProcess("User $User from group ""$($Group.displayName)""")) {
+        Write-Verbose "Removing user $User from group ""$($Group.AdditionalProperties.displayName)""..."
+        if ($PSCmdlet.ShouldProcess("User $User from group ""$($Group.AdditionalProperties.displayName)""")) {
             #If Distribution Groups or Mail-enabled security group, use the Exchange methods
-            if ($Group.mailEnabled -eq $true -and $Group.groupTypes -notcontains "DynamicMembership" -and $Group.groupTypes -notcontains "Unified") {
+            if ($Group.AdditionalProperties.mailEnabled -eq $true -and $Group.AdditionalProperties.groupTypes -notcontains "DynamicMembership" -and $Group.AdditionalProperties.groupTypes -notcontains "Unified") {
                 if (!$ProcessExchangeGroups) {
-                    Process-Output -Output @{"User" = $user;"Group" = $Group.displayName;"ObjectType" = $Group.RecipientType;"Result" = "Skipped due to Exchange group"} -Message "Group ""$($Group.displayName)"" is authored in Exchange Online, please use the -ProcessExchangeGroups switch when running the script in order to remove it..."
+                    Process-Output -Output @{"User" = $user;"Group" = $Group.AdditionalProperties.displayName;"ObjectType" = $Group.RecipientType;"Result" = "Skipped due to Exchange group"} -Message "Group ""$($Group.AdditionalProperties.displayName)"" is authored in Exchange Online, please use the -ProcessExchangeGroups switch when running the script in order to remove it..."
                     continue
                 }
 
                 #Hack to get the group processed by Remove-ExchangeMembership
                 $Group.RecipientType = "SecurityGroup"
-                if (!$Group.displayName) { $Group | Add-Member -MemberType NoteProperty -Name "displayName" -Value $Group.displayName }
+                if (!$Group.displayName) { $Group | Add-Member -MemberType NoteProperty -Name "displayName" -Value $Group.AdditionalProperties.displayName }
                 Remove-ExchangeMembership -Group $Group -User $User -ExceptionsList $ExceptionsList -Confirm:$false #already went through the confirmation process
             }
             #Otherwise, use the Graph API
             else {
-                $uri = "https://graph.microsoft.com/v1.0/groups/$($Group.Id)/members/$User/`$ref"
                 try {
-                    $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop #suppress the output
-                    Process-Output -Output @{"User" = $user;"Group" = $Group.displayName;"ObjectType" = $Group.RecipientType;"Result" = "Success"} -Message "Successfully removed user $User from group ""$($Group.displayName)""."
+                    Remove-MgGroupMemberDirectoryObjectByRef -GroupId $Group.Id -DirectoryObjectId $User -Verbose:$false -ErrorAction Stop
+                    Process-Output -Output @{"User" = $user;"Group" = $Group.AdditionalProperties.displayName;"ObjectType" = $Group.RecipientType;"Result" = "Success"} -Message "Successfully removed user $User from group ""$($Group.AdditionalProperties.displayName)""."
                 }
                 catch {
-                    Process-Error -ErrorMessage $_ -User $User -Group $Group.displayName
-                    Process-Output -Output @{"User" = $user;"Group" = $Group.displayName;"ObjectType" = $Group.RecipientType;"Result" = "Failed"} -Message "Failed to remove user $User from group ""$($Group.displayName)""."
+                    Process-Error -ErrorMessage $_ -User $User -Group $Group.AdditionalProperties.displayName
+                    Process-Output -Output @{"User" = $user;"Group" = $Group.AdditionalProperties.displayName;"ObjectType" = $Group.RecipientType;"Result" = "Failed"} -Message "Failed to remove user $User from group ""$($Group.AdditionalProperties.displayName)""."
                     continue
                 }
             }
         }
-        else { Process-Output -Output @{"User" = $user;"Group" = $Group.displayName;"ObjectType" = $Group.RecipientType;"Result" = "Skipped due to Confirm process"} -Message "Skipping removal of user $User from group ""$($Group.displayName)""." }
+        else { Process-Output -Output @{"User" = $user;"Group" = $Group.AdditionalProperties.displayName;"ObjectType" = $Group.RecipientType;"Result" = "Skipped due to Confirm process"} -Message "Skipping removal of user $User from group ""$($Group.AdditionalProperties.displayName)""." }
     }
 }
 
@@ -594,24 +514,12 @@ function Remove-ExchangeMembership {
     if (!$cmdlet) { Write-Verbose "Invalid group type ""$($Group.RecipientType)"" found, skipping..."; return }
 
     #If we passed the Group object from Graph, it should have id/ExternalDirectoryObjectId value, so we have our unique identifier
-    if ($Group.id) {
-        $body = @{
-            CmdletInput = @{
-                CmdletName=$cmdlet;
-                Parameters=@{Identity=$Group.id}
-    }}}
+    if ($Group.id) { $cmdlet += " -Identity $($Group.id)" }
     #Else, filter by displayName
-    else {
-        $body = @{
-            CmdletInput = @{
-                CmdletName=$cmdlet;
-                Parameters=@{Filter="Name -eq `'$($Group.displayName)`'"}
-    }}}
+    else { $cmdlet += " -Filter ""Name -eq '$($Group.displayName)'""" }
 
-    $uri = "https://outlook.office365.com/adminapi/beta/$($TenantID)/InvokeCommand?`$select=Name,Identity,ExternalDirectoryObjectId,ExchangeObjectId,IsDirSynced,RecipientTypeDetails"
     try {
-        $result = Invoke-WebRequest -Method POST -Uri $uri -Headers $authHeaderExchange -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" -Verbose:$false -ErrorAction Stop
-        $result = ($result.Content | ConvertFrom-Json).value
+        $result = Invoke-Expression $cmdlet -ErrorAction Stop -Verbose:$false
         if (!$result) { Write-Verbose "Group ""$($Group.displayName)"" not found, skipping..."; return }
         if ($result.count -gt 1) { Write-Verbose "Multiple groups matching the identifier $($Group.displayName) found, skipping..."; return }
 
@@ -654,19 +562,10 @@ function Remove-ExchangeMembership {
             "SecurityGroup" { "Remove-DistributionGroupMember" }
             default { "Remove-DistributionGroupMember" }
         }
-        $body = @{
-            CmdletInput = @{
-                CmdletName=$cmdlet
-                Parameters=@{
-                    Identity=$Group.ExchangeObjectId
-                    Member=$User
-                    Confirm=$False
-                    BypassSecurityGroupManagerCheck=$True
-        }}}
+        $cmdlet += " -Identity $($Group.ExchangeObjectId) -Member $User -Confirm:`$false -BypassSecurityGroupManagerCheck"
 
-        $uri = "https://outlook.office365.com/adminapi/beta/$($TenantID)/InvokeCommand"
         try {
-            $result = Invoke-WebRequest -Method POST -Uri $uri -Headers $authHeaderExchange -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" -Verbose:$false -ErrorAction Stop #suppress the output
+            $result = Invoke-Expression $cmdlet -ErrorAction Stop -Verbose:$false #suppress the output
             Process-Output -Output @{"User" = $user;"Group" = $Group.displayName;"ObjectType" = $Group.RecipientType;"Result" = "Success"} -Message "Successfully removed user $User from group ""$($Group.displayName).""."
             $script:processed["$($Group.ExchangeObjectId)"] = "Succeeded" #Cannot use Id/ExternalDirectoryObjectId as RoleGroups do not have them populated
         }
@@ -687,16 +586,8 @@ function Remove-ExchangeRoleAssignments {
     foreach ($RoleAssignment in $RoleAssignments) {
         Write-Verbose "Removing direct Management role assignment ""$RoleAssignment""..."
         if ($PSCmdlet.ShouldProcess("Management role assingnment ""$RoleAssignment""")) {
-            $body = @{
-                CmdletInput = @{
-                    CmdletName="Remove-ManagementRoleAssignment"
-                    Parameters=@{"Identity"=$RoleAssignment;"Confirm"=$False}
-                }
-            }
-
-            $uri = "https://outlook.office365.com/adminapi/beta/$($TenantID)/InvokeCommand"
             try {
-                $result = Invoke-WebRequest -Method POST -Uri $uri -Headers $authHeaderExchange -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" -Verbose:$false -ErrorAction Stop #suppress the output
+                $result = Remove-ManagementRoleAssignment -Identity $RoleAssignment -Confirm:$false -Verbose:$false -ErrorAction Stop #suppress the output
                 Process-Output -Output @{"User" = $user.Name;"Group" = $RoleAssignment;"ObjectType" = "Exchange Role assignment";"Result" = "Success"} -Message "Successfully removed Management role assignment ""$RoleAssignment""."
             }
             catch {
@@ -712,14 +603,49 @@ function Remove-ExchangeRoleAssignments {
 # Main script
 #==========================================================================
 
-#Variables to configure
-$tenantID = "tenant.onmicrosoft.com" #your tenantID or tenant root domain
-$appID = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" #the GUID of your app
-$client_secret = "verylongsecurestring" #client secret for the app
+#Determine the required scopes, based on the parameters passed to the script
+$RequiredScopes = switch ($PSBoundParameters.Keys) {
+    "IncludeDirectoryRoles" { "Directory.ReadWrite.All", "RoleManagement.ReadWrite.Directory" } #Mandatory for Directory Role assignments
+    "ProcessOwnership" { "Application.ReadWrite.All" } #Mandatory, NOT covered by Directory.ReadWrite.All
+    #"ProcessOauthGrants" { "DelegatedPermissionGrant.ReadWrite.All" } #covered by Directory.ReadWrite.All
+    #"IncludeAdministrativeUnits" { "AdministrativeUnit.ReadWrite.All" } #covered by Directory.ReadWrite.All
+    Default { "Group.ReadWrite.All" }
+}
 
-Renew-Token -Service "Graph"
-if ($ProcessExchangeGroups) { Renew-Token -Service Exchange }
+#Connectivity bits
+Connect-MgGraph -Scopes $RequiredScopes -NoWelcome -ErrorAction Stop
+if ($ProcessExchangeGroups) { Connect-ExchangeOnline -ShowBanner:$false -ShowProgress:$false -SkipLoadingFormatData -CommandName "Get-Group","Get-DistributionGroup","Remove-RoleGroupMember","Remove-DistributionGroupMember","Get-ManagementRoleAssignment","Remove-ManagementRoleAssignment" -Verbose:$false -ErrorAction Stop }
 
+if (!(Get-MgContext)) { Write-Error "Failed to connect to the Graph API, aborting..." -ErrorAction Stop }
+if ($ProcessExchangeGroups) {
+    if (!(Get-ConnectionInformation)) { Write-Error "Failed to connect to Exchange Online, aborting..." -ErrorAction Stop }
+    if ((Get-MgContext).TenantId -ne (Get-ConnectionInformation).TenantId) { Write-Error "The Graph API and Exchange Online PowerShell connections are not using the same tenantID, aborting..." -ErrorAction Stop }
+}
+
+#Do we need these? Add them to #Requires instead?
+if ($IncludeDirectoryRoles) {
+    if (!(Get-Module Microsoft.Graph.Identity.Governance)) { Import-Module Microsoft.Graph.Identity.Governance -Verbose:$false -ErrorAction Stop }
+    if ((Get-MgContext).Scopes -notcontains "Directory.ReadWrite.All" -and (Get-MgContext).Scopes -notcontains "RoleManagement.ReadWrite.Directory") {
+        Write-Error "The current connection does not have the required permissions to process Directory Role assignments, aborting..." -ErrorAction Stop
+    }
+}
+if ($ProcessOwnership) {
+    if (!(Get-Module Microsoft.Graph.Applications)) { Import-Module Microsoft.Graph.Applications -Verbose:$false -ErrorAction Stop }
+    if ((Get-MgContext).Scopes -notcontains "Application.ReadWrite.All") {
+        Write-Error "The current connection does not have the required permissions to process ownership, aborting..." -ErrorAction Stop
+    }
+}
+if ($IncludeAdministrativeUnits) {
+    if (!(Get-Module Microsoft.Graph.Identity.DirectoryManagement)) { Import-Module Microsoft.Graph.Identity.DirectoryManagement -Verbose:$false -ErrorAction Stop }
+    if (((Get-MgContext).Scopes -notcontains "AdministrativeUnit.ReadWrite.All") -and ((Get-MgContext).Scopes -notcontains "Directory.ReadWrite.All")) {
+        Write-Error "The current connection does not have the required permissions to process Administrative Units, aborting..." -ErrorAction Stop
+    }
+}
+if ($ProcessOauthGrants) {
+    if (((Get-MgContext).Scopes -notcontains "DelegatedPermissionGrant.ReadWrite.All") -and ((Get-MgContext).Scopes -notcontains "Directory.ReadWrite.All")) {
+        Write-Error "The current connection does not have the required permissions to process OAuth2PermissionGrants, aborting..." -ErrorAction Stop
+    }
+}
 $global:out = @() #Change scope?
 
 #As the script supports bulk processing, we need to resolve Identity value, remove incomplete entries, remove duplicates, etc
@@ -732,10 +658,8 @@ foreach ($user in $Identity) {
     }
 
     #Make sure a matching user object is found and return its GUID.
-    $uri = "https://graph.microsoft.com/v1.0/users/$($user)?`$select=id,userPrincipalName" #Do we need the UPN?
     try {
-        $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop
-        $result = ($result | ConvertFrom-Json) | Select-Object Id, UserPrincipalName
+        $result = Get-MgUser -UserId $user -ErrorAction Stop -Verbose:$false
     }
     catch {
         Process-Error -ErrorMessage $_ -User $user -Group "N/A"
@@ -745,7 +669,6 @@ foreach ($user in $Identity) {
 
     if (($result.count -gt 1) -or ($GUIDs[$user]) -or ($GUIDs.Values -eq $result.id)) { Write-Verbose "Multiple users matching the identifier $user found, skipping..."; continue }
     else { $GUIDs[$result.userPrincipalName] = $result.id }
-
 }
 if (!$GUIDs -or ($GUIDs.Count -eq 0)) { Write-Error "No matching users found for ""$Identity"", check the parameter values." -ErrorAction Stop; return }
 Write-Verbose "The following list of users will be used: ""$($GUIDs.Keys -join ", ")"""
@@ -756,10 +679,9 @@ else { $EGUIDs = $null }
 
 #Resolve the SubstituteOwner value if provided
 if ($SubstituteOwner) {
-    $uri = "https://graph.microsoft.com/v1.0/users/$($SubstituteOwner)?`$select=id,userPrincipalName"
     try {
-        $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop
-        $SubstituteOwner = ($result | ConvertFrom-Json).id
+        $result = Get-MgUser -UserId $SubstituteOwner -ErrorAction Stop -Verbose:$false
+        $SubstituteOwner = $result.id
     }
     catch {
         Process-Error -ErrorMessage $_ -User $SubstituteOwner -Group "N/A"
@@ -794,32 +716,10 @@ foreach ($user in $GUIDs.GetEnumerator()) {
         Process-OauthGrants -User $user.value
     }
 
-    #If we are processing Exchange groups, add some necessary headers
-    if ($ProcessExchangeGroups) {
-        $authHeaderExchange["X-ResponseFormat"] = "json"
-        $authHeaderExchange["Prefer”] = "odata.maxpagesize=1000"
-        $authHeaderExchange["connection-id"] = $([guid]::NewGuid().Guid).ToString()
-
-        #If tenantID is GUID, fetch the tenant root domain in order to prepare the AnchorMailbox header
-        if ($TenantID -match "^[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}$") {
-            $uri = "https://graph.microsoft.com/v1.0/domains/?`$top=999&`$select=id,isInitial"
-            try {
-                $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop
-                $TID = (($result | ConvertFrom-Json).value | ? {$_.isInitial -eq $true}).id
-                $authHeaderExchange["X-AnchorMailbox"] = "UPN:SystemMailbox{bb558c35-97f1-4cb9-8ff7-d53741dc928c}@$($TID)"
-            }
-            catch {
-                Process-Error -ErrorMessage $_ -User "N/A" -Group "N/A"
-                if (!$Quiet) { Write-Warning "Failed to fetch tenant root domain, proceeding without X-AnchorMailbox header value..." }
-            }
-        }
-        else { $authHeaderExchange["X-AnchorMailbox"] = "UPN:SystemMailbox{bb558c35-97f1-4cb9-8ff7-d53741dc928c}@$($TenantID)" }
-    }
-
     #Remove Directory role assignments
     if ($IncludeDirectoryRoles) {
         Write-Verbose "Processing Directory Role assignments for user $($User.Name)..."
-        $memberOfRoles = $MemberOf | ? {$_.'@odata.type' -eq '#microsoft.graph.directoryRole'}
+        $memberOfRoles = $MemberOf | ? {$_.AdditionalProperties.'@odata.type' -eq '#microsoft.graph.directoryRole'}
 
         #Can exclude by roleID (NOT roleTemplateID) if needed
         if ($memberOfRoles) { Remove-RoleMembership -Roles $memberOfRoles -User $User.Value -ExceptionsList $EGUIDs }
@@ -836,18 +736,9 @@ foreach ($user in $GUIDs.GetEnumerator()) {
         if ($ProcessExchangeGroups) {
             $script:processed = @{} #Track Exchange groups we've already processed. Do the same for AAD roles that map to Exchange ones?
             Write-Verbose "Processing Exchange Role assignments for user $($User.Name)..."
-            $body = @{
-                CmdletInput = @{
-                    CmdletName="Get-ManagementRoleAssignment"
-                    Parameters=@{RoleAssignee=$user.Name} #We need UPN for best result, alias or ExternalDirectoryObjectId do not work with Get-ManagementRoleAssignment
-                }
-            }
-
             #Get the list of Exchange Role assignments
-            $uri = "https://outlook.office365.com/adminapi/beta/$($TenantID)/InvokeCommand?`$select=Name,Role,RoleAssigneeName,RoleAssigneeType,AssignmentMethod,EffectiveUserName"
             try {
-                $result = Invoke-WebRequest -Method POST -Uri $uri -Headers $authHeaderExchange -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" -Verbose:$false -ErrorAction Stop
-                $memberOfExchangeRoles = ($result.Content | ConvertFrom-Json).value | ? {$_.RoleAssigneeType -ne "RoleAssignmentPolicy"}
+                $memberOfExchangeRoles = Get-ManagementRoleAssignment -RoleAssignee $user.Name -Verbose:$false -ErrorAction Stop | ? {$_.RoleAssigneeType -ne "RoleAssignmentPolicy"}
             }
             catch {
                 Process-Error -ErrorMessage $_ -User $User.Name -Group "N/A"
@@ -875,7 +766,7 @@ foreach ($user in $GUIDs.GetEnumerator()) {
     #Remove Administrative unit membership
     if ($IncludeAdministrativeUnits) {
         Write-Verbose "Processing Administrative Unit membership for user $($User.Name)..."
-        $memberOfAUs = $MemberOf | ? {$_.'@odata.type' -eq '#microsoft.graph.administrativeUnit'}
+        $memberOfAUs = $MemberOf | ? {$_.AdditionalProperties.'@odata.type' -eq '#microsoft.graph.administrativeUnit'}
 
         if ($memberOfAUs) { Remove-AUMembership -AUs $memberOfAUs -User $User.Value -ExceptionsList $EGUIDs }
         else { Write-Verbose "No Administrative unit membership found for user $($User.Name), skipping..." }
@@ -891,7 +782,7 @@ foreach ($user in $GUIDs.GetEnumerator()) {
 
     #Remove Group membership
     Write-Verbose "Processing Group membership for user $($User.Name)..."
-    $memberOfGroups = $MemberOf | ? {$_.'@odata.type' -eq '#microsoft.graph.group'}
+    $memberOfGroups = $MemberOf | ? {$_.AdditionalProperties.'@odata.type' -eq '#microsoft.graph.group'}
 
     if ($memberOfGroups) { Remove-GroupMembership -Groups $memberOfGroups -User $User.Value -ExceptionsList $EGUIDs }
     else { Write-Verbose "No group membership found for user $($User.Name), skipping..." }
