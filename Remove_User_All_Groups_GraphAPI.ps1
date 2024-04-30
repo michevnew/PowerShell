@@ -76,7 +76,7 @@ function Process-Exceptions {
     )
 
     #Remove entries that do not match a GUID regex.
-    $EGUIDs = $Exceptions | sort -Unique | ? {$_.ToLower() -match "^[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}$"}
+    $EGUIDs = $Exceptions | Sort-Object -Unique | ? {$_.ToLower() -match "^[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}$"}
     if (!$EGUIDs) { return }
 
     #Make sure a matching object is found and return its type. We use the getByIds method to avoid multiple calls. Because of this, exceptions will not apply to some Exchange scenarios.
@@ -96,7 +96,7 @@ function Process-Exceptions {
         if (!$Quiet) { Write-Warning "Unable to resolve exceptions" }
     }
 
-    $EGUIDs = @($result.Id | sort -Unique)
+    $EGUIDs = @($result.Id | Sort-Object -Unique)
     Write-Verbose "The following list of exceptions will be used: ""$(@($EGUIDs) -join ", ")"""
     return $EGUIDs
 }

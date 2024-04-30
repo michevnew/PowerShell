@@ -13,31 +13,6 @@ Param([switch]$IncludeSignInStats,[switch]$IncludeRecommendations)
 #Helper functions
 #==========================================================================
 
-#Lite version of the Parse-JWTtoken function from https://www.michev.info/Blog/Post/2247/parse-jwt-token-in-powershell
-function Parse-JWTtoken {
-
-    [cmdletbinding()]
-    param([Parameter(Mandatory=$true)][string]$token)
-
-    #Validate as per https://tools.ietf.org/html/rfc7519
-    if (!$token.Contains(".") -or !$token.StartsWith("eyJ")) { Write-Error "Invalid token" -ErrorAction Stop }
-
-    #Payload
-    $tokenPayload = $token.Split(".")[1].Replace('-', '+').Replace('_', '/')
-    #Fix padding as needed, keep adding "=" until string length modulus 4 reaches 0
-    while ($tokenPayload.Length % 4) { Write-Verbose "Invalid length for a Base-64 char array or string, adding ""="""; $tokenPayload += "=" }
-
-    #Convert to Byte array
-    $tokenByteArray = [System.Convert]::FromBase64String($tokenPayload)
-    #Convert to string array
-    $tokenArray = [System.Text.Encoding]::ASCII.GetString($tokenByteArray)
-
-    #Convert from JSON to PSObject
-    $tokobj = $tokenArray | ConvertFrom-Json
-
-    return $tokobj
-}
-
 function parse-AppPermissions {
 
     Param(
@@ -85,7 +60,7 @@ function parse-Credential {
     #Return number of credentials
     $credout[0] = ($cred.count).ToString()
     #Check if any there is an expired credential
-    if ((Get-Date) -gt ($cred.endDateTime | sort -Descending | select -First 1)) { $credout[0] += " (expired)" }
+    if ((Get-Date) -gt ($cred.endDateTime | Sort-Object -Descending | select -First 1)) { $credout[0] += " (expired)" }
     #Check for credentials with excessive validity
     foreach ($c in $cred) {
         $cstring = $c.keyId
@@ -323,10 +298,10 @@ foreach ($App in $Apps) {
         "Allow Public client flows" = (&{if ($App.isFallbackPublicClient -eq "true") { "True" } else { "False" }}) #probably need to handle 'null' value as well
         "Key credentials" = (&{if ($App.keyCredentials) { (parse-Credential $App.keyCredentials)[0] } else { "" }})
         "KeyCreds" = (&{if ($App.keyCredentials) { ((parse-Credential $App.keyCredentials)[1]) -join ";" } else { $null }})
-        "Next expiry date (key)" = (&{if ($App.keyCredentials) { ($App.keyCredentials.endDateTime | ? {$_ -ge (Get-Date)} | sort -Descending | select -First 1) } else { "" }})
+        "Next expiry date (key)" = (&{if ($App.keyCredentials) { ($App.keyCredentials.endDateTime | ? {$_ -ge (Get-Date)} | Sort-Object -Descending | select -First 1) } else { "" }})
         "Password credentials" = (&{if ($App.passwordCredentials) { (parse-Credential $App.passwordCredentials)[0] } else { "" }})
         "PasswordCreds" = (&{if ($App.passwordCredentials) { ((parse-Credential $App.passwordCredentials)[1]) -join ";" } else { $null }})
-        "Next expiry date (password)" = (&{if ($App.passwordCredentials) { ($App.passwordCredentials.endDateTime | ? {$_ -ge (Get-Date)} | sort -Descending | select -First 1) } else { "" }})
+        "Next expiry date (password)" = (&{if ($App.passwordCredentials) { ($App.passwordCredentials.endDateTime | ? {$_ -ge (Get-Date)} | Sort-Object -Descending | select -First 1) } else { "" }})
         "App property lock" = (&{if ($App.servicePrincipalLockConfiguration.isEnabled -and $App.servicePrincipalLockConfiguration.allProperties) { $true } else { $false }})
         "HasBadURIs" = (&{if ($App.web.redirectUris -match "localhost|http://|urn:|\*") { $true } else { $false }})
         "Redirect URIs" = (&{if ($App.web.redirectUris) { $App.web.redirectUris -join ";" } else { $null }})
