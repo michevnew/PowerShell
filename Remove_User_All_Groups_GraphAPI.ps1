@@ -903,7 +903,7 @@ if ($out) {
         $out | select User, @{n="Object";e={$_.Group}},ObjectType, Result | Out-Default
     }
     #Export the results to a CSV file
-    $out | select User, @{n="Object";e={$_.Group}},ObjectType, Result | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_UserRemovalInfo.csv" -NoTypeInformation -Encoding UTF8 -UseCulture -Confirm:$false -WhatIf:$false
+    $out | select User, @{n="Object";e={$_.Group}},ObjectType, Result | Export-Csv -Path "$($PWD)\$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_UserRemovalInfo.csv" -NoTypeInformation -Encoding UTF8 -UseCulture -Confirm:$false -WhatIf:$false
     Write-Verbose "Results exported to ""$($PWD)\$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_UserRemovalInfo.csv""."
 }
 else { Write-Verbose "Output is empty, skipping the export to CSV file..." }
