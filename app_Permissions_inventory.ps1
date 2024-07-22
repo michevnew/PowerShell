@@ -21,7 +21,7 @@ foreach ($ServicePrincipal in $ServicePrincipals) {
     Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Homepage" -Value $ServicePrincipal.Homepage
     Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "ObjectId" -Value $ServicePrincipal.ObjectId
     Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Enabled" -Value $ServicePrincipal.AccountEnabled
-    Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Valid until" -Value ($SPperm.ExpiryTime | select -Unique | sort -Descending | select -First 1)
+    Add-Member -InputObject $objPermissions -MemberType NoteProperty -Name "Valid until" -Value ($SPperm.ExpiryTime | select -Unique | Sort-Object -Descending | select -First 1)
 
     Write-Host $SPperm.Scope
     $SPperm | % {#CAN BE DIFFERNT FOR DIFFERENT USERS!

@@ -75,7 +75,7 @@ foreach ($user in $users) {
             foreach ($planToEnable in $plansToEnable) {
                 if ($planToEnable -notmatch "^[{(]?[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}[)}]?$") { $planToEnable = ($SKU.ServicePlans | ? {$_.ServicePlanName -eq "$planToEnable"}).ServicePlanId }
                 if (($planToEnable -in $SKU.ServicePlans.ServicePlanId) -and ($planToEnable -in $license.DisabledPlans)) {
-                    $license.DisabledPlans = @($license.DisabledPlans | ? {$_ -ne $planToEnable} | sort -Unique)
+                    $license.DisabledPlans = @($license.DisabledPlans | ? {$_ -ne $planToEnable} | Sort-Object -Unique)
                     $planToEnableName = ($Sku.servicePlans | ? {$_.ServicePlanId -eq "$planToEnable"}).servicePlanName #move out of the loop...
                     Write-Verbose "Toggled plan $planToEnable ($($planToEnableName)) from license $($license.SkuId) ($($SKU.skuPartNumber))"
                 }

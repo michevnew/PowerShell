@@ -175,7 +175,7 @@ function Get-EmailAddressesInventory {
         }
     }
     #Output the result to the console host. Rearrange/sort as needed.
-    $arrAliases | select * -ExcludeProperty Number | sort Aliases -Unique
+    $arrAliases | select * -ExcludeProperty Number | Sort-Object Aliases -Unique
 }
 
 #Invoke the Get-EmailAddressesInventory function and pass the command line parameters. Make sure the output is stored in a variable for reuse, even if not specified in the input!

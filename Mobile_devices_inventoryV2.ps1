@@ -26,7 +26,7 @@ function Check-Connectivity {
 
 #Helper function for loading the mailbox data. If no existing CSV file is found or it is outdated, the function will generate a new file (might take some time)...
 function Load-MailboxMatchInputFile {
-    $importCSV = Get-ChildItem -Path $PSScriptRoot -Filter "*MailboxReport.csv" | sort LastWriteTime -Descending | select -First 1 #| select -ExpandProperty FullName
+    $importCSV = Get-ChildItem -Path $PSScriptRoot -Filter "*MailboxReport.csv" | Sort-Object LastWriteTime -Descending | select -First 1 #| select -ExpandProperty FullName
 
     if (!$importCSV -or $importCSV.LastWriteTime -le (Get-Date).AddDays(-30)) {
         #No CSV file detected or it's too old, generate new mailbox report

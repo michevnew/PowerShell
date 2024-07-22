@@ -192,8 +192,8 @@ foreach ($role in $roles) {
             $role | Add-Member -MemberType NoteProperty -Name "Activated for" -Value $null
         }
 
-        $role | Add-Member -MemberType NoteProperty -Name "Start time" -Value (&{if ($activeRole.startDateTime) {(Get-Date($activeRole.startDateTime | select -Unique | sort | select -First 1) -format g)} else {$null}})
-        $role | Add-Member -MemberType NoteProperty -Name "End time" -Value (&{if ($activeRole.endDateTime) {(Get-Date($activeRole.endDateTime | select -Unique | sort -Descending | select -First 1) -format g)} else {$null}})
+        $role | Add-Member -MemberType NoteProperty -Name "Start time" -Value (&{if ($activeRole.startDateTime) {(Get-Date($activeRole.startDateTime | select -Unique | Sort-Object | select -First 1) -format g)} else {$null}})
+        $role | Add-Member -MemberType NoteProperty -Name "End time" -Value (&{if ($activeRole.endDateTime) {(Get-Date($activeRole.endDateTime | select -Unique | Sort-Object -Descending | select -First 1) -format g)} else {$null}})
         $role | Add-Member -MemberType NoteProperty -Name "AssignmentType" -Value (&{if ($activeRole.startDateTime) {"Eligible (Active)"} else {"Eligible"}})
     }
 
@@ -222,7 +222,7 @@ foreach ($role in $roles) {
 #endregion Output
 
 #format and export
-$report | sort PrincipalDisplayName #| Export-CSV -nti -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_AzureADRoleInventory.csv"
+$report | Sort-Object PrincipalDisplayName #| Export-CSV -nti -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_AzureADRoleInventory.csv"
 Write-Verbose "Output exported to $($PWD)\$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_AzureADRoleInventory.csv"
 
 #LIST all PAG

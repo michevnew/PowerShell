@@ -32,4 +32,4 @@ foreach ($user in $Users) {
     $arrOUs += $objUser
 }
 
-$arrOUs | select 'Display Name',UPN,OU | sort OU | Export-CSV -nti -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_O365UsersOUReport.csv"
+$arrOUs | select 'Display Name',UPN,OU | Sort-Object OU | Export-CSV -nti -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_O365UsersOUReport.csv"

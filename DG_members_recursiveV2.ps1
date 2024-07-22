@@ -286,7 +286,7 @@ function Get-GroupMembershipReport {
         #Get the list of members.
 	    $members = Get-GroupMemberRecursive -Identity $GName.PrimarySmtpAddress -RecursiveOutput:$RecursiveOutput -RecursiveOutputListGroups:$RecursiveOutputListGroups
         #Filter out any duplicates and sort
-        $members = $members | sort Identifier -Unique
+        $members = $members | Sort-Object Identifier -Unique
 
         #Prepare the output object.
 	    $objProperties = New-Object PSObject
@@ -302,7 +302,7 @@ function Get-GroupMembershipReport {
     }
 
     #Output the result to the console host. Rearrange/sort as needed.
-    $arrGroupData | sort PrimarySmtpAddress
+    $arrGroupData | Sort-Object PrimarySmtpAddress
 }
 
 #Invoke the Get-GroupMembershipReport function and pass the command line parameters. Make sure the output is stored in a variable for reuse, even if not specified in the input!

@@ -96,4 +96,4 @@ Foreach ($Site in $Sites) {
     $Report += $objSite
 }
 
-$Report | Sort Site | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_TeamsSprawlReport.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
+$Report | Sort-Object Site | Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_TeamsSprawlReport.csv" -NoTypeInformation -Encoding UTF8 -UseCulture

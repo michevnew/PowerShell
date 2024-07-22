@@ -27,12 +27,12 @@ function Get-AzureADGroupOwnersInventory {
     if (Get-Command Get-AzureADMSGroup -ErrorAction SilentlyContinue) {
         Write-Host "Using the Azure AD Preview module." -ForegroundColor Cyan
         $output = Get-AzureADMSGroup -All:$true | % { $_ | Add-Member "Owners" ((Get-AzureADGroupOwner -ObjectId $_.id).UserPrincipalName -join ";") -PassThru }
-        $output | sort DisplayName | select DisplayName,MailEnabled,SecurityEnabled,GroupTypes,Owners,@{n="ObjectId";e={$_.Id}}
+        $output | Sort-Object DisplayName | select DisplayName,MailEnabled,SecurityEnabled,GroupTypes,Owners,@{n="ObjectId";e={$_.Id}}
     }
     else {
         Write-Host "Using the Azure AD module." -ForegroundColor Cyan
         $output = Get-AzureADGroup -All:$true | % { $_ | Add-Member "Owners" ((Get-AzureADGroupOwner -ObjectId $_.ObjectId).UserPrincipalName -join ";") -PassThru }
-        $output | sort DisplayName | select DisplayName,MailEnabled,SecurityEnabled,Owners,ObjectId
+        $output | Sort-Object DisplayName | select DisplayName,MailEnabled,SecurityEnabled,Owners,ObjectId
     }
 }
 
@@ -66,7 +66,7 @@ function Get-ExchangeObjectsOwnersInventory {
     }
 
     #Return the output
-    $outputExchange | sort DisplayName | select DisplayName,MailEnabled,SecurityEnabled,ManagedBy,Owners,RecipientTypeDetails,@{n="ObjectId";e={$_.ExternalDirectoryObjectId}}
+    $outputExchange | Sort-Object DisplayName | select DisplayName,MailEnabled,SecurityEnabled,ManagedBy,Owners,RecipientTypeDetails,@{n="ObjectId";e={$_.ExternalDirectoryObjectId}}
 }
 
 #Get the Azure AD Owner report

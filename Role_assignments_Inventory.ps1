@@ -158,5 +158,5 @@ if ($IncludeRoleGroups -and $IncludeUnassignedRoleGroups) {
 $output #| Export-Csv -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_RoleAssignments.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
 
 #Transform the output and return it to the console. Group assignments by individual user/group
-$global:varRoleAssignments = $output | group Assignee | select @{n="DisplayName";e={($_.Group.AssigneeName | sort -Unique)}},@{n="Identifier";e={$_.Name}},@{n="ObjectType";e={($_.Group.AssigneeType | sort -Unique) -join ","}},@{n="AssignmentType";e={($_.Group.AssignmentType | sort -Unique) -join ","}},@{n="Roles";e={($_.Group.AssignedRoles | sort -Unique) -join ","}} | sort DisplayName
+$global:varRoleAssignments = $output | group Assignee | select @{n="DisplayName";e={($_.Group.AssigneeName | Sort-Object -Unique)}},@{n="Identifier";e={$_.Name}},@{n="ObjectType";e={($_.Group.AssigneeType | Sort-Object -Unique) -join ","}},@{n="AssignmentType";e={($_.Group.AssignmentType | Sort-Object -Unique) -join ","}},@{n="Roles";e={($_.Group.AssignedRoles | Sort-Object -Unique) -join ","}} | Sort-Object DisplayName
 $global:varRoleAssignments | ft

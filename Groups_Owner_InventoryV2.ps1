@@ -25,7 +25,7 @@ function Get-AzureADGroupOwnersInventory {
     #If no objects are returned from the above cmdlet, stop the script and inform the user
     if (!$output) { Write-Error "No group objects found" -ErrorAction Stop }
 
-    $output | sort DisplayName | select DisplayName,Id,Mail,MailEnabled,SecurityEnabled,GroupTypes,@{n="Owners";e={$_.Owners.AdditionalProperties.userPrincipalName -join ","}}
+    $output | Sort-Object DisplayName | select DisplayName,Id,Mail,MailEnabled,SecurityEnabled,GroupTypes,@{n="Owners";e={$_.Owners.AdditionalProperties.userPrincipalName -join ","}}
 }
 
 #Helper function for fetching ManagedBy data from Exchange Online
@@ -57,7 +57,7 @@ function Get-ExchangeObjectsOwnersInventory {
     }
 
     #Return the output
-    $outputExchange | sort DisplayName | select DisplayName,@{n="Id";e={$_.ExternalDirectoryObjectId}},PrimarySMTPAddress,MailEnabled,SecurityEnabled,ManagedBy,Owners,RecipientTypeDetails
+    $outputExchange | Sort-Object DisplayName | select DisplayName,@{n="Id";e={$_.ExternalDirectoryObjectId}},PrimarySMTPAddress,MailEnabled,SecurityEnabled,ManagedBy,Owners,RecipientTypeDetails
 }
 
 #Get the Azure AD Owner report

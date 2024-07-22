@@ -400,7 +400,7 @@ foreach ($SP in $SPs) {
         #process application permissions entries
         if (!$appRoleAssignments) { Write-Verbose "No application permissions to report on for SP $($SP.id), skipping..." }
         else {
-            $objPermissions.'Last modified (application)' = (Get-Date($appRoleAssignments.CreationTimestamp | select -Unique | sort -Descending | select -First 1) -format g)
+            $objPermissions.'Last modified (application)' = (Get-Date($appRoleAssignments.CreationTimestamp | select -Unique | Sort-Object -Descending | select -First 1) -format g)
 
             parse-AppPermissions $appRoleAssignments
             $objPermissions.'Permissions (application)' = (($OAuthperm.GetEnumerator()  | % { "$($_.Name):$($_.Value.ToString().TrimStart(','))"}) -join ";")
@@ -425,7 +425,7 @@ foreach ($SP in $SPs) {
         else {
             parse-DelegatePermissions $oauth2PermissionGrants
             $objPermissions.'Permissions (delegate)' = (($OAuthperm.GetEnumerator() | % { "$($_.Name):$($_.Value.ToString().TrimStart(','))"}) -join ";")
-            $objPermissions.'Valid until (delegate)' = (Get-Date($oauth2PermissionGrants.ExpiryTime | select -Unique | sort -Descending | select -First 1) -format g)
+            $objPermissions.'Valid until (delegate)' = (Get-Date($oauth2PermissionGrants.ExpiryTime | select -Unique | Sort-Object -Descending | select -First 1) -format g)
 
             if (($oauth2PermissionGrants.ConsentType | select -Unique) -eq "AllPrincipals") { $assignedto += "All users (admin consent)" }
             $assignedto +=  @($OAuthperm.Keys) | % {if ($_ -match "\((.*@.*)\)") {$Matches[1]}}

@@ -31,4 +31,4 @@ foreach ($AADRole in $AADRoles) {
 
 #format and export
 $report = foreach ($key in ($RolesHash.Keys)) { $RolesHash[$key] | % { [PSCustomObject]$_ } }
-$report | sort DisplayName | Export-CSV -nti -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_AzureADRoleInventory.csv"
+$report | Sort-Object DisplayName | Export-CSV -nti -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_AzureADRoleInventory.csv"

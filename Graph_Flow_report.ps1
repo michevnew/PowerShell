@@ -177,7 +177,7 @@ foreach ($flow in $flows) {
     $flow | Add-Member -NotePropertyName Triggers -NotePropertyValue (processActions ($FlowDetails.properties.definitionSummary.triggers | select type,swaggerOperationId,@{n="api";e={$_.api.name}} -Unique))
 
     #Reference resources
-    $flow | Add-Member -NotePropertyName Resources -NotePropertyValue (($FlowDetails.properties.referencedResources.service | sort -Unique) -join ";")
+    $flow | Add-Member -NotePropertyName Resources -NotePropertyValue (($FlowDetails.properties.referencedResources.service | Sort-Object -Unique) -join ";")
 
     #Actions
     $flow | Add-Member -NotePropertyName Actions -NotePropertyValue (processActions ($FlowDetails.properties.definitionSummary.actions | select type,swaggerOperationId,@{n="api";e={$_.api.name}} -Unique))
