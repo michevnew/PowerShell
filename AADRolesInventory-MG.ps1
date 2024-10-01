@@ -83,7 +83,7 @@ if ($IncludePAGAssignments) {
         #Get the list of eligible members, done via the Get-MgBetaIdentityGovernancePrivilegedAccessGroupEligibilitySchedule cmdlet. #NOT expanding groups here
         #If a member is both eligible and active, it will appear in both lists!
         $eMembers = @{};$eMembersId = @()
-        foreach ($member in (Get-MgBetaIdentityGovernancePrivilegedAccessGroupEligibilitySchedule -Filter "groupId eq '$($role.principalId)'" -ExpandProperty principal -Verbose:$false -ErrorAction Stop)) {
+        foreach ($member in (Get-MgIdentityGovernancePrivilegedAccessGroupEligibilitySchedule -Filter "groupId eq '$($role.principalId)'" -ExpandProperty principal -Verbose:$false -ErrorAction Stop)) {
             $eMembers[$member.principal.Id] = $member.principal.AdditionalProperties.userPrincipalName
             $eMembersId += if ($member.principal.AdditionalProperties.userPrincipalName) { $member.principal.AdditionalProperties.userPrincipalName } else { "$($member.principal.AdditionalProperties.displayName) ($($member.principal.Id))" }
         }

@@ -332,7 +332,7 @@ if ($IncludeSignInStats) {
 if ($IncludeRecommendations) {
     Write-Verbose "Retrieving directory recommendations..."
     $dirRecs = @()
-    $uri = "https://graph.microsoft.com/beta/directory/recommendations?`$filter=featureAreas/any(x:x eq 'applications')&`$expand=impactedResources"
+    $uri = "https://graph.microsoft.com/beta/directory/recommendations?`$filter=featureAreas/any(x:x eq 'applications')&`$expand=impactedResources" #are we certain it returns all impacted resources or just 20/100/whatever?
 
     try {
         $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -ErrorAction Stop -Verbose:$false

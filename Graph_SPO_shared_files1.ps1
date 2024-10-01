@@ -4,6 +4,8 @@
 #    Sites.Read.All to return all the item sharing details
 #    (optional) Directory.Read.All to obtain a domain list and check whether an item is shared externally
 
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/6154/report-on-externally-shared-files-via-the-graph-api
+
 [CmdletBinding()] #Make sure we can use -Verbose
 Param(
 [string[]][ValidateNotNullOrEmpty()]$Sites, #Use the Sites parameter to specify a set of sites to process.

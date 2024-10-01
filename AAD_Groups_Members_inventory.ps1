@@ -49,6 +49,7 @@ if ($GroupList) {
     Write-Verbose "Running the script against the provided list of groups..."
     foreach ($group in $GroupList) {
         try {
+            #$expand might NOT return all owners, address this!
             $uri = "https://graph.microsoft.com/v1.0/groups/$($group)?`$select=id,displayName,groupTypes,securityEnabled,mailEnabled,membershipRule,isAssignableToRole,mail,assignedLicenses&`$expand=owners(`$select=userPrincipalName)"
             $res = Invoke-WebRequest -Method Get -Headers $authHeader -Uri $uri -ErrorAction Stop -Verbose:$VerbosePreference
             $gres = ($res.Content | ConvertFrom-Json)
@@ -66,6 +67,7 @@ else {
     #Get the list of all user objects within the tenant.
     Write-Verbose "Running the script against all groups in the tenant..."
 
+    #$expand might NOT return all owners, address this!
     $uri = "https://graph.microsoft.com/v1.0/groups?`$top=999&`$select=id,displayName,groupTypes,securityEnabled,mailEnabled,membershipRule,isAssignableToRole,mail,assignedLicenses&`$expand=owners(`$select=userPrincipalName)"
     do {
         $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -Verbose:$VerbosePreference
