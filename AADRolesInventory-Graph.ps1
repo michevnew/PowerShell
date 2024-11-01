@@ -222,7 +222,7 @@ foreach ($role in $roles) {
 #endregion Output
 
 #format and export
-$report | Sort-Object PrincipalDisplayName #| Export-CSV -nti -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_AzureADRoleInventory.csv"
+$report | Sort-Object PrincipalDisplayName | Export-CSV -nti -Path "$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_AzureADRoleInventory.csv"
 Write-Verbose "Output exported to $($PWD)\$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_AzureADRoleInventory.csv"
 
 #LIST all PAG

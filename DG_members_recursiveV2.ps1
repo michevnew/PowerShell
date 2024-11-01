@@ -120,7 +120,7 @@ function Get-Membership {
     foreach ($l in $list) {
         Write-Verbose "Processig $($l.Name) ..."
         #Check whether we have already processed this object and if so, skip it.
-        if ($l.Guid.Guid -eq $group.Guid.Guid -or $processed.ContainsValue($l.Guid.Guid)) { Write-Verbose "Recusrion detected, aborting..."; continue }
+        if ($l.Guid.Guid -eq $group.Guid.Guid -or $processed.ContainsValue($l.Guid.Guid)) { Write-Verbose "Recursion detected, aborting..."; continue }
 
         #If the object is not yet processed, and is of type Group, toggle the variable to signal presence of nested groups.
         if ($l.RecipientTypeDetails -match "Group") {

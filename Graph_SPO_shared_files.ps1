@@ -200,7 +200,7 @@ function getPermissions {
         #Invitation
         elseif ($entry.invitation) { $permlist += $($entry.roles) + ":" + $($entry.invitation.email) }
         #Direct permissions
-        elseif ($entry.roles) {
+        elseif ($null -ne $entry.roles) {
             if (!$entry.grantedToV2) { $roleentry = "Unknown"; continue }
 
             $facets = $entry.grantedToV2.psobject.properties | ? {$_.MemberType -eq "NoteProperty"} | select Name,value
@@ -221,10 +221,14 @@ function getPermissions {
                 if ($roleentry) { break }
             }
 
-            $permlist += $($entry.Roles) + ':' + $roleentry
+            #This one seems new... and stupid
+            if ("" -eq $entry.roles) { $permlist += "Restricted view:" + $roleentry } #Restricted view/View Only/God knows what else
+            else { $permlist += $($entry.Roles) + ':' + $roleentry }
         }
         #Inherited permissions. Useless...
-        elseif ($entry.inheritedFrom) { $permlist += "[Inherited from: $($entry.inheritedFrom.path)]" } #If only Graph populated these...
+        elseif ($entry.inheritedFrom.path) { $permlist += "[Inherited from: $($entry.inheritedFrom.path)]" } #If only Graph populated these...
+        #ShareId... perhaps add it to the output?
+        elseif ($entry.shareId) {} #do nothing
         #some other permissions?
         else { Write-Verbose "Permission $entry not covered by the script!"; $permlist += $entry }
     }
@@ -263,12 +267,15 @@ function Renew-Token {
 
 function Invoke-GraphApiRequest {
     param(
-    [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$Uri
-    )
+    [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$Uri,
+    [bool]$RetryOnce)
 
     if (!$AuthHeader) { Write-Verbose "No access token found, aborting..."; throw }
 
-    try { $result = Invoke-WebRequest -Headers $AuthHeader -Uri $uri -Verbose:$false -ErrorAction Stop }
+    if ($MyInvocation.BoundParameters.ContainsKey("ErrorAction")) { $ErrorActionPreference = $MyInvocation.BoundParameters["ErrorAction"] }
+    else { $ErrorActionPreference = "Stop" }
+
+    try { $result = Invoke-WebRequest -Headers $AuthHeader -Uri $uri -Verbose:$false -ErrorAction $ErrorActionPreference -ConnectionTimeoutSeconds 300 } #still getting the occasional timeout :(
     catch {
         if ($null -eq $_.Exception.Response) { throw }
 
@@ -284,7 +291,28 @@ function Invoke-GraphApiRequest {
                 $result = Invoke-GraphApiRequest -Uri $uri -Verbose:$VerbosePreference
             }
             "ResourceNotFound|Request_ResourceNotFound" { Write-Verbose "Resource $uri not found, skipping..."; return } #404, continue
-            "BadRequest" { throw } #400, we should terminate... but stupid Graph sometimes returns 400 instead of 404
+            "BadRequest" { #400, we should terminate... but stupid Graph sometimes returns 400 instead of 404. And sometimes for a valid request... so likely throttling related
+                if ($RetryOnce) { throw } #We already retried, terminate
+                Write-Verbose "Received a Bad Request reply, retry after 10 seconds just because Graph sucks..."
+                Start-Sleep -Seconds 10
+                $result = Invoke-GraphApiRequest -Uri $uri -Verbose:$VerbosePreference -RetryOnce
+            }
+            "GatewayTimeout" {
+                #Do NOT retry, the error is persistent and on the server side
+                Write-Verbose "The request timed out, if this happens regularly, consider increasing the timeout or updating the query to retrieve less data per run"; throw
+            }
+            "ServiceUnavailable" { #Should be retriable, then again, it's Microsoft...
+                if ($RetryOnce) { throw } #We already retried, terminate
+                if ($_.Exception.Response.Headers.'Retry-After') {
+                    Write-Verbose "The request was throttled, pausing for $($_.Exception.Response.Headers.'Retry-After') seconds..."
+                    Start-Sleep -Seconds $_.Exception.Response.Headers.'Retry-After'
+                }
+                else {
+                    Write-Verbose "The service is unavailable, pausing for 10 seconds..."
+                    Start-Sleep -Seconds 10
+                    $result = Invoke-GraphApiRequest -Uri $uri -Verbose:$VerbosePreference -RetryOnce
+                }
+            }
             "Forbidden" { Write-Verbose "Insufficient permissions to run the Graph API call, aborting..."; throw } #403, terminate
             "InvalidAuthenticationToken" { #Access token has expired
                 if ($_.ErrorDetails.Message -match "Lifetime validation failed, the token is expired|Access token has expired") { #renew token, continue
@@ -334,7 +362,8 @@ if ($Sites) {#Process the list of sites provided as input
     foreach ($Site in $Sites) {
         if ($Site.Contains("/")) { $Site = $Site.Replace("https://", "").Replace("sharepoint.com", "sharepoint.com:/").TrimEnd("/") }
         $uri = "https://graph.microsoft.com/v1.0/sites/$Site"
-        $result = Invoke-GraphApiRequest -Uri $uri -Verbose:$VerbosePreference -ErrorAction Stop
+        $result = Invoke-GraphApiRequest -Uri $uri -Verbose:$VerbosePreference -ErrorAction SilentlyContinue
+        if (!$result) { Write-Warning "Site $Site not found, skipping..."; continue }
         $GraphSites += $result
     }
 }
@@ -354,38 +383,55 @@ else {#Get all sites
     }
 }
 if (!$GraphSites) { throw "No sites found, aborting..." }
+$GraphSites = $GraphSites | select * -Unique #Remove duplicates
 Write-Verbose "Obtained a total of $($GraphSites.count) sites"
 
 #Processing sites
 $Output = @()
 $count = 1; $PercentComplete = 0;
-foreach ($site in $GraphSites) {
+foreach ($GraphSite in $GraphSites) {
     #Progress message
-    $ActivityMessage = "Retrieving data for site $($site.displayName). Please wait..."
-    $StatusMessage = ("Processing site {0} of {1}: {2}" -f $count, @($GraphSites).count, $site.webUrl)
+    $ActivityMessage = "Retrieving data for site $($GraphSite.displayName). Please wait..."
+    $StatusMessage = ("Processing site {0} of {1}: {2}" -f $count, @($GraphSites).count, $GraphSite.webUrl)
     $PercentComplete = ($count / @($GraphSites).count * 100)
     Write-Progress -Activity $ActivityMessage -Status $StatusMessage -PercentComplete $PercentComplete
     $count++
 
-    Write-Verbose "Processing site $($site.webUrl)..."
-    $uri = "https://graph.microsoft.com/v1.0/sites/$($site.id)/drives?`$expand=list(`$select=id,list)&`$select=id,webUrl&`$top=999" #Do we need pagination?
-    $SiteDrives = Invoke-GraphApiRequest -Uri $uri -Verbose:$VerbosePreference -ErrorAction Stop
-    #No server-side filtering, so we do it here
-    $SiteDrives = $SiteDrives.value | ? {$_.list.list.hidden -eq $false -and ($_.list.list.template -eq "documentLibrary" -or $_.list.list.template -eq "mySiteDocumentLibrary")}
-    if (!$SiteDrives) { Write-Verbose "No lists found for site $($site.webUrl), skipping..."; continue }
+    #Check for any subsites and add them to the list to process later
+    $cSite = @($GraphSite) #current site
+    if (!$site.isPersonalSite) { #Personal sites cannot have subsites anymore... should we still check?
+        $uri = "https://graph.microsoft.com/v1.0/sites/$($GraphSite.id)/sites?`$top=999" #Do we need pagination?
+        $SubSites = Invoke-GraphApiRequest -Uri $uri -Verbose:$VerbosePreference -ErrorAction Stop
+        if ($SubSites.value) {
+            foreach ($SubSite in $SubSites.value) {
+                $cSite += $SubSite
+            }
+        }
+    }
 
-    #Process each drive
-    foreach ($SiteDrive in $SiteDrives) {#max page size is 5000
-        #Get the root folder on the drive
-        $uri = "https://graph.microsoft.com/v1.0/sites/$($site.id)/drives/$($SiteDrive.id)/root"
-        $SiteDriveRoot = Invoke-GraphApiRequest -Uri $uri -Verbose:$VerbosePreference -ErrorAction Stop
+    #Process each site
+    foreach ($site in $cSite) {
+        Write-Verbose "Processing site $($site.webUrl)..."
+        #Get the set of Drives, filter out hidden ones and those that are not document libraries
+        $uri = "https://graph.microsoft.com/v1.0/sites/$($site.id)/drives?`$expand=list(`$select=id,list)&`$select=id,webUrl&`$top=999" #Do we need pagination?
+        $SiteDrives = Invoke-GraphApiRequest -Uri $uri -Verbose:$VerbosePreference -ErrorAction Stop
+        #No server-side filtering, so we do it here
+        $SiteDrives = $SiteDrives.value | ? {$_.list.list.hidden -eq $false -and ($_.list.list.template -eq "documentLibrary" -or $_.list.list.template -eq "mySiteDocumentLibrary")}
+        if (!$SiteDrives) { Write-Verbose "No lists found for site $($site.webUrl), skipping..."; continue }
 
-        #If no items in the drive, skip
-        if (!$SiteDriveRoot -or ($SiteDriveRoot.folder.childCount -eq 0)) { Write-Verbose "No items to report on for site $($SiteDrive.webUrl), skipping..."; continue }
+        #Process each drive
+        foreach ($SiteDrive in $SiteDrives) {#max page size is 5000
+            #Get the root folder on the drive
+            $uri = "https://graph.microsoft.com/v1.0/sites/$($site.id)/drives/$($SiteDrive.id)/root"
+            $SiteDriveRoot = Invoke-GraphApiRequest -Uri $uri -Verbose:$VerbosePreference -ErrorAction Stop
 
-        #Enumerate items in the drive and prepare the output
-        $pOutput = processChildren -Site $site -URI $uri -ExpandFolders:$ExpandFolders -depth $depth
-        $Output += $pOutput
+            #If no items in the drive, skip
+            if (!$SiteDriveRoot -or ($SiteDriveRoot.folder.childCount -eq 0)) { Write-Verbose "No items to report on for site $($SiteDrive.webUrl), skipping..."; continue }
+
+            #Enumerate items in the drive and prepare the output
+            $pOutput = processChildren -Site $site -URI $uri -ExpandFolders:$ExpandFolders -depth $depth
+            $Output += $pOutput
+        }
     }
 
     #simple anti-throttling control
@@ -399,7 +445,7 @@ $global:varSPOSharedItems = $Output | select Site,SiteURL,Name,ItemType,Shared,E
 if ($ExportToExcel) {
     Write-Verbose "Exporting the results to an Excel file..."
     # Verify module exists
-    if ($null -eq (Get-Module -Name ImportExcel -ListAvailable)) {
+    if ($null -eq (Get-Module -Name ImportExcel -ListAvailable -Verbose:$false)) {
         Write-Verbose "The ImportExcel module was not found, skipping export to Excel file..."; return
     }
 

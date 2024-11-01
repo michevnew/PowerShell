@@ -396,6 +396,7 @@ foreach ($App in $Apps) {
         "App property lock" = (&{if ($App.servicePrincipalLockConfiguration.isEnabled -and $App.servicePrincipalLockConfiguration.allProperties) { $true } else { $false }})
         "HasBadURIs" = (&{if ($App.web.redirectUris -match "localhost|http://|urn:|\*") { $true } else { $false }})
         "Redirect URIs" = (&{if ($App.web.redirectUris) { $App.web.redirectUris -join ";" } else { $null }})
+        #"identifierUris" = (&{if ($App.identifierUris) { $App.identifierUris -join ";" } else { $null }}) #-match "api://($app.AppId)"
     }
 
     #Include sign-in stats, if requested

@@ -1,2 +1,4 @@
 Role_assignments_InventoryV2.ps1
 EntraAuditSequenceEvents.ps1
+*.csv
+*.xlsx
