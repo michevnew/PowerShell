@@ -1,4 +1,4 @@
-#Requires -Version 3.0
+#Requires -Version 7.4
 # Make sure to fill in all the required variables before running the script
 # Also make sure the AppID used corresponds to an app with sufficient permissions, as follows:
 #    User.Read.All to enumerate all users in the tenant
@@ -284,6 +284,7 @@ do {
     Start-Sleep -Milliseconds 500
     $GraphUsers += $result.Value
 } while ($uri)
+if (!$GraphUsers) { throw "No users found, aborting..." }
 
 #Get the drive for each user and enumerate files
 $Output = @()

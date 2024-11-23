@@ -1,4 +1,4 @@
-#Requires -Version 3.0
+#Requires -Version 7.4
 # Make sure to fill in all the required variables before running the script
 # Also make sure the AppID used corresponds to an app with sufficient permissions, as follows:
 #    Sites.Read.All

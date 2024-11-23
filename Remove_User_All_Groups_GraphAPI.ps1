@@ -55,7 +55,7 @@ function Renew-Token {
         $authenticationResult = Invoke-WebRequest -Method Post -Uri $url -Body $body -ErrorAction Stop -Verbose:$false
         $token = ($authenticationResult.Content | ConvertFrom-Json).access_token
     }
-    catch { $_; return }
+    catch { throw $_ }
 
     if (!$token) { Write-Error "Failed to aquire token!" -ErrorAction Stop; return }
     else {
@@ -718,7 +718,7 @@ $appID = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" #the GUID of your app
 $client_secret = "verylongsecurestring" #client secret for the app
 
 Renew-Token -Service "Graph"
-if ($ProcessExchangeGroups) { Renew-Token -Service Exchange }
+if ($ProcessExchangeGroups) { Renew-Token -Service "Exchange" }
 
 $global:out = @() #Change scope?
 
@@ -797,7 +797,7 @@ foreach ($user in $GUIDs.GetEnumerator()) {
     #If we are processing Exchange groups, add some necessary headers
     if ($ProcessExchangeGroups) {
         $authHeaderExchange["X-ResponseFormat"] = "json"
-        $authHeaderExchange["Prefer”] = "odata.maxpagesize=1000"
+        $authHeaderExchange["Prefer"] = "odata.maxpagesize=1000"
         $authHeaderExchange["connection-id"] = $([guid]::NewGuid().Guid).ToString()
 
         #If tenantID is GUID, fetch the tenant root domain in order to prepare the AnchorMailbox header

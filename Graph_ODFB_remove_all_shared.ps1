@@ -127,7 +127,7 @@ function RemovePermissions {
 
     foreach ($entry in $permissions) {
         if ($entry.inheritedFrom) { Write-Verbose "Skipping inherited permissions..." ; continue }
-        Invoke-WebRequest -Method DELETE -Verbose:$VerbosePreference -Uri "$uri/$($entry.id)" -Headers $authHeader -ErrorAction Stop | Out-Null
+        Invoke-WebRequest -Method DELETE -Verbose:$VerbosePreference -Uri "$uri/$($entry.id)" -Headers $authHeader -SkipHeaderValidation -ErrorAction Stop | Out-Null
     }
     #check for sp. prefix on permission entries
     #SC admin permissions are skipped, not covered via the "shared" property

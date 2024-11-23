@@ -1,18 +1,14 @@
 #Requires -Version 7.4
 # Make sure to fill in all the required variables before running the script
 # Also make sure the AppID used corresponds to an app with sufficient permissions, as follows:
-#    Sites.Read.All to return all the item sharing details
-#    (optional) Directory.Read.All to obtain a domain list and check whether an item is shared externally
+#    Sites.ReadWrite.All to return all the item sharing details and remove permissions
 
-#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/6154/report-on-externally-shared-files-via-the-graph-api
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/
 
 [CmdletBinding()] #Make sure we can use -Verbose
 Param(
 [string[]][ValidateNotNullOrEmpty()]$Sites, #Use the Sites parameter to specify a set of sites to process.
-[switch]$IncludeODFBsites, #Use the IncludeODFBsites switch to specify whether to include personal OneDrive for Business sites in the output.
-[switch]$IncludeExpired, #Use the IncludeExpired switch to include expired sharing links in the output.
-[switch]$IncludeOwner, #Use the IncludeOwner switch to include Site collection admin/secondary admin entries in the output.
-[switch]$ExportToExcel #Use the ExportToExcel switch to specify whether to export the output to an Excel file.
+[switch]$IncludeODFBsites #Use the IncludeODFBsites switch to specify whether to include personal OneDrive for Business sites in the output.
 )
 
 function processChildren {
@@ -35,13 +31,28 @@ function processChildren {
     if (!$children.value) { Write-Verbose "No items found for $($Site.webUrl), skipping..."; continue }
 
     $output = @();$i=0
-    Write-Verbose "Processing a total of $($children.value.count) items for $($Site.webUrl), of which $(($children.value.driveItem | ? {$_.shared}).count) are shared..."
-    $children = $children.value | ? {$_.driveItem.shared}
+    $children = $children.value | ? {$_.driveItem.shared} #Only process shared items
     if (!$children) { continue }
+    Write-Verbose "Processing a total of $(($children).count) shared items for $($Site.webUrl)..."
 
     #Process items
     foreach ($file in $children) {
-        $output += (processItem -Site $Site -file $file -Verbose:$VerbosePreference)
+        Write-Verbose "Found shared file ($($file.driveItem.name)), removing permissions..."
+        RemovePermissions ("https://graph.microsoft.com/beta/sites/{0}/drives/{1}/items/{2}" -f $site.id, $file.driveItem.parentReference.driveId, $file.driveItem.id) -Verbose:$VerbosePreference
+
+        #Prepare the output object
+        $fileinfo = New-Object psobject
+        $fileinfo | Add-Member -MemberType NoteProperty -Name "Site" -Value $site.displayName
+        $fileinfo | Add-Member -MemberType NoteProperty -Name "SiteURL" -Value $Site.webUrl
+        $fileinfo | Add-Member -MemberType NoteProperty -Name "Name" -Value $file.driveItem.name
+        #Determine the item type
+        if ($file.driveItem.package.Type -eq "OneNote") { $itemType = "Notebook" }
+        elseif ($file.driveItem.file) { $itemType = "File" }
+        else { $itemType = "Folder" }
+        $fileinfo | Add-Member -MemberType NoteProperty -Name "ItemType" -Value $itemType
+        $fileinfo | Add-Member -MemberType NoteProperty -Name "ItemPath" -Value $file.webUrl
+        $fileinfo | Add-Member -MemberType NoteProperty -Name "ItemID" -Value "https://graph.microsoft.com/v1.0/sites/$($Site.id)/drives/$($file.driveItem.parentReference.driveId)/items/$($file.driveitem.id)"
+        $output += $fileinfo
 
         #Anti-throttling control
         $i++
@@ -51,122 +62,29 @@ function processChildren {
     return $output
 }
 
-function processItem {
-    Param(
-    #Graph site object
-    [Parameter(Mandatory=$true)]$site,
-    #File object
-    [Parameter(Mandatory=$true)]$file)
+function RemovePermissions {
 
-    #Prepare the output object
-    $fileinfo = New-Object psobject
-    $fileinfo | Add-Member -MemberType NoteProperty -Name "Site" -Value $site.displayName
-    $fileinfo | Add-Member -MemberType NoteProperty -Name "SiteURL" -Value $Site.webUrl
-    $fileinfo | Add-Member -MemberType NoteProperty -Name "Name" -Value $file.driveItem.name
-    #Determine the item type
-    if ($file.driveItem.package.Type -eq "OneNote") { $itemType = "Notebook" }
-    elseif ($file.driveItem.file) { $itemType = "File" }
-    else { $itemType = "Folder" }
-    $fileinfo | Add-Member -MemberType NoteProperty -Name "ItemType" -Value $itemType
-    $fileinfo | Add-Member -MemberType NoteProperty -Name "Shared" -Value (&{If($file.driveItem.shared) {"Yes"} Else {"No"}})
-
-    #If the Shared property is set, fetch permissions
-    if ($file.driveItem.shared) {
-        $permlist = getPermissions ("https://graph.microsoft.com/beta/sites/{0}/drives/{1}/items/{2}" -f $site.id, $file.driveItem.parentReference.driveId, $file.driveItem.id) -Verbose:$VerbosePreference
-        if (!$permlist) { return } #No permissions found, skip the item. Or try with -IncludeOwner
-
-        #Match entries against the list of domains in the tenant to populate the ExternallyShared value
-        $regexmatches = $permlist | % {if ($_ -match "\(?\w+([-+.']\w+)*(#EXT#)?@\w+([-.]\w+)*\.\w+([-.]\w+)*\)?") {$Matches[0]}} #Updated to match Guest user UPNs
-        if ($permlist -match "anonymous") { $fileinfo | Add-Member -MemberType NoteProperty -Name "ExternallyShared" -Value "Yes" }
-        else {
-            if (!$domains) { $fileinfo | Add-Member -MemberType NoteProperty -Name "ExternallyShared" -Value "No domain info" }
-            elseif ($regexmatches -match "#EXT#") { $fileinfo | Add-Member -MemberType NoteProperty -Name "ExternallyShared" -Value "Yes" }
-            elseif ($regexmatches -notmatch ($domains -join "|")) { $fileinfo | Add-Member -MemberType NoteProperty -Name "ExternallyShared" -Value "Yes" }
-            else { $fileinfo | Add-Member -MemberType NoteProperty -Name "ExternallyShared" -Value "No" }
-        }
-        $fileinfo | Add-Member -MemberType NoteProperty -Name "Permissions" -Value ($permlist -join ",")
-    }
-    $fileinfo | Add-Member -MemberType NoteProperty -Name "ItemPath" -Value $file.webUrl
-    $fileinfo | Add-Member -MemberType NoteProperty -Name "ItemID" -Value "https://graph.microsoft.com/v1.0/sites/$($Site.id)/drives/$($file.driveItem.parentReference.driveId)/items/$($file.driveitem.id)"
-
-    #handle the output
-    return $fileinfo
-}
-
-function getPermissions {
     Param(
     #Use the ItemId parameter to provide an unique identifier for the item object.
     [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$ItemURI)
 
-    #Check if the token is about to expire and renew if needed
-    if ($tokenExp -lt [datetime]::Now.AddSeconds(360)) {
-        Write-Verbose "Access token is about to expire, renewing..."
-        Renew-Token
-    }
-
-    #fetch permissions for the given item. Add pagination support?
+    #Fetch permissions for the given item. Pagination?
     $uri = "$ItemURI/permissions?`$top=999"
     $permissions = (Invoke-GraphApiRequest -Uri $uri -Verbose:$VerbosePreference).Value
 
-    #build the permissions string
-    $permlist = @()
     foreach ($entry in $permissions) {
-        #Sharing link
-        if ($entry.link) {
-            #blocksDownload is undocumented type, not sure if working as expected. In any case, we need the actual role reflected
-            if ($entry.link.type -eq "blocksDownload") { $strPermissions = $($entry.roles) + ":" + $($entry.link.scope) }
-            else { $strPermissions = $($entry.link.type) + ":" + $($entry.link.scope) }
-            if ($entry.grantedToIdentitiesV2) { $strPermissions = $strPermissions + " (" + (((&{If($entry.grantedToIdentitiesV2.siteUser.email) {$entry.grantedToIdentitiesV2.siteUser.email} else {$entry.grantedToIdentitiesV2.User.email}}) | select -Unique) -join ",") + ")" }
-            if ($entry.hasPassword) { $strPermissions = $strPermissions + "[PasswordProtected]" }
-            if ($entry.link.preventsDownload) { $strPermissions = $strPermissions + "[BlockDownloads]" }
-            if ($entry.expirationDateTime) {
-                if ($entry.expirationDateTime -lt [datetime]::Now) {
-                    if ($IncludeExpired) { $strPermissions = $strPermissions + " (Expired on: $($entry.expirationDateTime))" }
-                    else { continue }
-                }
-                else { $strPermissions = $strPermissions + " (Expires on: $($entry.expirationDateTime))" }
-            }
-            $permlist += $strPermissions
-        }
-        #Invitation
-        elseif ($entry.invitation) { $permlist += $($entry.roles) + ":" + $($entry.invitation.email) }
-        #Direct permissions
-        elseif ($null -ne $entry.roles) {
-            if (!$entry.grantedToV2) { $roleentry = "Unknown"; continue }
+        #Check if the permission is external
+        #if (($entry.link.scope -eq "anonymous") -or (($entry | ConvertFrom-Json -Depth 5) -match "#EXT#")) { #do stuff }
 
-            $facets = $entry.grantedToV2.psobject.properties | ? {$_.MemberType -eq "NoteProperty"} | select Name,value
-            foreach ($t in $facets) {
-                $roleentry = switch ($t.Name) {
-                    "siteUser" {
-                        if ($t.value.email) { $t.value.email }
-                        elseif ($t.value.loginName) { $t.value.loginName }
-                        else { $t.value.displayName }
-                        break
-                    }
-                    "User" { $t.value.email; break }
-                    "siteGroup" { $t.value.displayName; break }
-                    "group" { $t.value.displayName; break }
-                    "application" { $t.value.Id; break }
-                    default { $t.value.loginName; break }
-                }
-                if ($roleentry) { break }
-            }
+        $uri = "$ItemURI/permissions/$($entry.id)"
 
-            #This one seems new... and stupid
-            if ("" -eq $entry.roles) { $permlist += "Restricted view:" + $roleentry } #Restricted view/View Only/God knows what else
-            else { $permlist += $($entry.Roles) + ':' + $roleentry }
-        }
-        #Inherited permissions. Useless...
-        elseif ($entry.inheritedFrom.path) { $permlist += "[Inherited from: $($entry.inheritedFrom.path)]" } #If only Graph populated these...
-        #ShareId... perhaps add it to the output?
-        elseif ($entry.shareId) {} #do nothing
-        #some other permissions?
-        else { Write-Verbose "Permission $entry not covered by the script!"; $permlist += $entry }
+        try { Invoke-WebRequest -Method DELETE -Verbose:$false -Uri $uri -Headers $authHeader -SkipHeaderValidation -ErrorAction Stop | Out-Null }
+        catch { Write-Verbose "Failed to remove permission entry $entry for $ItemURI"; continue }
+
+        #Anti-throttling control
+        $i++
+        if ($i % 100 -eq 0) { Start-Sleep -Milliseconds 500 }
     }
-
-    #handle the output
-    if (!$IncludeOwner) { return ($permlist | ? {$_ -notmatch 'owner:'}) }
-    else { return $permlist }
 }
 
 function Renew-Token {
@@ -276,13 +194,6 @@ $client_secret = "verylongsecurestring" #client secret for the app
 
 Renew-Token
 
-Write-Verbose "Obtaining a list of verified domains..."
-#Used to determine whether sharing is done externally, needs Directory.Read.All scope.
-$domains = (Invoke-GraphApiRequest -Uri "https://graph.microsoft.com/v1.0/domains" -Verbose:$VerbosePreference).Value | ? {$_.IsVerified -eq "True"} | select -ExpandProperty Id
-#$domains = @("xxx.com","yyy.com")
-if (!$domains) { Write-Verbose "No verified domains found, skipping external sharing checks..." }
-else { Write-Verbose "The following list of domains will be used for external sharing checks: $($domains -join ", ")" }
-
 #Get a list of SPO/ODFB sites
 $GraphSites = @()
 if ($Sites) {#Process the list of sites provided as input
@@ -363,44 +274,7 @@ foreach ($GraphSite in $GraphSites) {
 
 #Return the output
 if (!$Output) { Write-Warning "No shared items found, exiting..."; return }
-$global:varSPOSharedItems = $Output | select Site,SiteURL,Name,ItemType,Shared,ExternallyShared,Permissions,ItemPath,ItemID | ? {$_.Shared -eq "Yes"}
+$global:varSPOSharedItems = $Output | select Site,SiteURL,Name,ItemType,ItemPath,ItemID | ? {$_.Shared -eq "Yes"}
 
-if ($ExportToExcel) {
-    Write-Verbose "Exporting the results to an Excel file..."
-    # Verify module exists
-    if ($null -eq (Get-Module -Name ImportExcel -ListAvailable -Verbose:$false)) {
-        Write-Verbose "The ImportExcel module was not found, skipping export to Excel file..."; return
-    }
-
-    $excel = $Output | select Site,SiteURL,Name,ItemType,Shared,ExternallyShared,Permissions,ItemPath,ItemID `
-    ` | Export-Excel -Path "$($PWD)\$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_SPOSharedItems.xlsx" -WorksheetName SharedFiles -FreezeTopRow -AutoFilter -BoldTopRow -NoHyperLinkConversion Permissions,ItemID -AutoSize -PassThru
-
-    $sheet = $excel.Workbook.Worksheets["SharedFiles"]
-    $sheet.Column(2).Hidden = $true #SiteURL
-
-    #Add a hyperlink to the SiteURL
-    $cells = $sheet.Cells["A:A"] #Gives just the populated cells
-    foreach ($cell in $cells) {
-        $cell.Hyperlink = $sheet.Cells[$cell.Address.Replace("A","B")].Text
-        $lastcell = $cell.Address #needed for styling/formatting, otherwise the whole column is changed and file size goes boom
-    }
-
-    $styles = @(
-        New-ExcelStyle -FontColor Blue -Underline -Range "A2:$lastcell"
-    )
-
-    #Add conditional formatting for the ExternallyShared column
-    Add-ConditionalFormatting -Worksheet $sheet -Range "F2:$($lastcell.Replace("A","F"))" -RuleType Equal -ConditionValue "Yes" -ForegroundColor White -BackgroundColor Red
-
-    #Add the summary sheet
-    $Output | group Site | select @{Name="Site";Expression={$_.Name}}, @{Name="Shared files";Expression={$_.Count}}, @{Name="Externally shared";e={($_.Group | ? {$_.ExternallyShared -eq "Yes"}).count}} `
-    ` | Export-Excel -ExcelPackage $excel -WorksheetName "Summary" -AutoSize -FreezeTopRow -BoldTopRow -PassThru
-
-    #Save the changes
-    Export-Excel -ExcelPackage $excel -WorksheetName "SharedFiles" -Style $styles -Show
-    Write-Verbose "Excel file exported successfully..."
-}
-else {
-    $Output | select Site,SiteURL,Name,ItemType,Shared,ExternallyShared,Permissions,ItemPath,ItemID | Export-Csv -Path "$($PWD)\$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_SPOSharedItems.csv" -NoTypeInformation -Encoding UTF8 -UseCulture 
-    Write-Verbose "Results exported to ""$($PWD)\$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_SPOSharedItems.csv""."
-}
+$Output | select Site,SiteURL,Name,ItemType,ItemPath,ItemID | Export-Csv -Path "$($PWD)\$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_SPOSharedItems.csv" -NoTypeInformation -Encoding UTF8 -UseCulture
+Write-Verbose "Results exported to ""$($PWD)\$((Get-Date).ToString('yyyy-MM-dd_HH-mm-ss'))_SPOSharedItems.csv""."
