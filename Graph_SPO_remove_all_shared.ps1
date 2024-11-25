@@ -3,7 +3,7 @@
 # Also make sure the AppID used corresponds to an app with sufficient permissions, as follows:
 #    Sites.ReadWrite.All to return all the item sharing details and remove permissions
 
-#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/6308/remove-all-sharing-links-and-permissions-for-items-in-sharepoint-online-or-onedrive-for-business
 
 [CmdletBinding()] #Make sure we can use -Verbose
 Param(
