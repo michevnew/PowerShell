@@ -1,5 +1,9 @@
 param([switch]$IncludeAll,[switch]$IncludeUserMailboxes,[switch]$IncludeSharedMailboxes,[switch]$IncludeRoomMailboxes,[switch]$IncludeDiscoveryMailboxes,[switch]$IncludeTeamMailboxes,[switch]$CheckInboxRules,[switch]$CheckCalendarDelegates,[switch]$CheckTransportRules)
 
+####################WARNING###################WARNING###################WARNING###################WARNING###################WARNING###################WARNING###################WARNING####################
+# This script does NOT work for Exchange Online/Microsoft 365 environments anymore. For a compatible version check https://github.com/michevnew/PowerShell/edit/master/Mailbox_Forwarding_inventoryV2.ps1 #
+###########################################################################################################################################################################################################
+
 function Get-MailboxForwardingInventory {
 <#
 .Synopsis
