@@ -7,6 +7,8 @@
 
 #For details on what the script does and how to run it, check: https://www.michev.info/blog/post/5958/reporting-on-ent…ts-including-pim
 
+#Add IsPrivileged to the output, requires /beta currently
+
 [CmdletBinding()] #Make sure we can use -Verbose
 Param([switch]$IncludePIMEligibleAssignments, #Indicate whether to include PIM elibigle role assignments in the output.
       [switch]$IncludePAGAssignments #Indicate whether to include Privileged Access Group assignments in the output.
@@ -216,6 +218,9 @@ foreach ($role in $roles) {
         "IsBuiltIn" = $role.roleDefinition1.isBuiltIn
         "RoleTemplate" = $role.roleDefinition1.templateId
         #"AllowedActions" = $role.roleDefinition1.RolePermissions.allowedResourceActions -join ";"
+        #"IsPrivileged" = $role.roleDefinition1.IsPrivileged
+        #"AssignmentMode" = $role.roleDefinition1.assignmentMode
+        #"RichDescription" = $role.roleDefinition1.richDescription
     }
     $report += @([pscustomobject]$reportLine)
 }
