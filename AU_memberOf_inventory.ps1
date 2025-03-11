@@ -1,9 +1,11 @@
 #Requires -Version 3.0
 #Make sure to fill in all the required variables before running the script
 #Also make sure the AppID used corresponds to an app with sufficient permissions, as follows:
-#    Directory.Read.All
+#    User.Read.All (required for /memberOf)
+#    AdministrativeUnit.Read.All (required, used to fetch AU membership)
+#    Directory.Read.All (optional, if you don't care about least privilege and don't want to add multiple permissions)
 
-#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/4228/reporting-on-users-administrative-unit-membership-in-azure-ad
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/6437/reporting-on-users-administrative-unit-membership-in-entra-id
 
 param([string[]]$UserList)
 
@@ -107,6 +109,8 @@ foreach ($u in $Users) {
             "AUName" = $null
             "AUType" = $null
             "AURule" = $null
+            "AUHiddenMembership" = $null
+            "RMAU" = $null
         }
 
         $output.Add($uInfo)
@@ -123,6 +127,8 @@ foreach ($u in $Users) {
             "AUName" = $AU.displayName
             "AUType" = (&{if ($AU.membershipType -eq "Dynamic") { "Dynamic" } else { "Static" }})
             "AURule" = (&{if ($AU.membershipType -eq "Dynamic") { $AU.membershipRule } else { $null }})
+            "AUHiddenMembership" = (&{if ($AU.Visibility) { "Yes" } else { "No" }})
+            "RMAU" = (&{if ($AU.IsMemberManagementRestricted) { "Yes" } else { "No" }})
         }
 
         $output.Add($uInfo)
