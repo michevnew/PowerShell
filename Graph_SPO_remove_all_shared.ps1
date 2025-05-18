@@ -68,6 +68,12 @@ function RemovePermissions {
     #Use the ItemId parameter to provide an unique identifier for the item object.
     [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$ItemURI)
 
+    #Check if the token is about to expire and renew if needed
+    if ($tokenExp -lt [datetime]::Now.AddSeconds(360)) {
+        Write-Verbose "Access token is about to expire, renewing..."
+        Renew-Token
+    }
+
     #Fetch permissions for the given item. Pagination?
     $uri = "$ItemURI/permissions?`$top=999"
     $permissions = (Invoke-GraphApiRequest -Uri $uri -Verbose:$VerbosePreference).Value

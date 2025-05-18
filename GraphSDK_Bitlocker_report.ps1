@@ -39,8 +39,8 @@ if ($PSBoundParameters.ContainsKey("IncludeDeviceOwner") -and $PSBoundParameters
 
 #Determine the required scopes, based on the parameters passed to the script
 $RequiredScopes = switch ($PSBoundParameters.Keys) {
-    "IncludeDeviceInfo" { if ($PSBoundParameters["IncludeDeviceInfo"]) {"Device.Read.All" } }
-    "IncludeDeviceOwner" { if ($PSBoundParameters["IncludeDeviceOwner"]) {"User.ReadBasic.All" } } #Otherwise we only get the UserId
+    "IncludeDeviceInfo" { if ($PSBoundParameters["IncludeDeviceInfo"]) { "Device.Read.All" } }
+    "IncludeDeviceOwner" { if ($PSBoundParameters["IncludeDeviceOwner"]) { "User.ReadBasic.All" } } #Otherwise we only get the UserId
     Default { "BitLockerKey.Read.All" }
 }
 
@@ -66,6 +66,9 @@ if ($PSBoundParameters["IncludeDeviceInfo"]) {
     }
     else { $Devices = Get-MgDevice -All -ErrorAction Stop -Verbose:$false }
 
+    #Filter out devices with ID of 00000000-0000-0000-0000-000000000000
+    $Devices = $Devices | ? {$Device.Id -ne "00000000-0000-0000-0000-000000000000" -or $Device.DeviceId -ne "00000000-0000-0000-0000-000000000000"}
+
     if ($Devices) { Write-Verbose "Retrieved $($Devices.Count) devices" }
     else { Write-Verbose "No devices found"; continue }
 
@@ -89,6 +92,13 @@ $Keys = Get-MgInformationProtectionBitlockerRecoveryKey -All -ErrorAction Stop -
 #Cycle through the keys and retrieve the key
 Write-Verbose "Retrieving BitLocker Recovery keys..."
 foreach ($Key in $Keys) {
+    #Skip stale/dummy devices
+    if ($Key.DeviceId -eq "00000000-0000-0000-0000-000000000000") {
+        Write-Warning "BitLocker key with ID $($Key.Id) has a device ID of 00000000-0000-0000-0000-000000000000, skipping..."
+        continue
+    }
+
+    #Get the BitLocker key details
     $RecoveryKey = Get-MgInformationProtectionBitlockerRecoveryKey -BitlockerRecoveryKeyId $Key.Id -Property key -ErrorAction Stop -Verbose:$false
     $Key.Key = (&{if ($RecoveryKey.Key) { $RecoveryKey.Key } else { "N/A" }})
     $Key | Add-Member -MemberType NoteProperty -Name "BitLockerKeyId" -Value $Key.Id
@@ -98,9 +108,17 @@ foreach ($Key in $Keys) {
 
     #If requested, include the device details
     if ($PSBoundParameters["IncludeDeviceInfo"]) {
-
         $Device = $Devices | ? { $Key.DeviceId -eq $_.DeviceId }
-        if (!$Device) { Write-Warning "Device with ID $($Key.DeviceId) not found!"; continue }
+        if (!$Device) {
+            Write-Warning "Device with ID $($Key.DeviceId) not found!"
+            $Key | Add-Member -MemberType NoteProperty -Name "DeviceName" -Value "Device not found"
+            continue
+        }
+        if ($Device.Id -eq "00000000-0000-0000-0000-000000000000" -or $Device.DeviceId -eq "00000000-0000-0000-0000-000000000000") {
+            Write-Warning "Stale/dummy device found for key $($Key.DeviceId), skipping..."
+            $Key | Add-Member -MemberType NoteProperty -Name "DeviceName" -Value "Stale/Dummy Device"
+            continue
+        }
 
         #If building a device report, add the BitLocker key details to the device object
         if ($PSBoundParameters["DeviceReport"]) {
