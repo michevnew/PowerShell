@@ -1,6 +1,8 @@
 [CmdletBinding()] #Make sure we can use -Verbose
 Param()
 
+#For details on what the script does and how to run it, check: https://www.michev.info/blog/post/6572/using-the-get-messagetracev2-cmdlet-to-generate-mail-traffic-statistics-by-user
+
 #Confirm connectivity to Exchange Online.
 Write-Verbose "Connecting to Exchange Online..."
 try { Get-EXORecipient -ResultSize 1 -ErrorAction Stop -Verbose:$false | Out-Null }
