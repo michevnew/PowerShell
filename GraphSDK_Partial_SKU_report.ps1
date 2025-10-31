@@ -1,3 +1,5 @@
+#For details on what the script does and how to run it, check: https://michev.info/blog/post/6826/report-on-partial-license-assignments-via-the-graph-sdk-for-powershell
+
 #region Variables
 #List of free SKUs
 #Update from https://learn.microsoft.com/en-us/entra/identity/users/licensing-service-plan-reference as needed
