@@ -13,7 +13,7 @@ function GUIDtoIdentifier ([GUID]$GUID) {
         "ids" = @("$GUID")
     } | ConvertTo-Json
 
-    $GObject = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/v1.0/directoryObjects/getByIds" -Method Post -Body $Json -ContentType "application/json"
+    $GObject = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/v1.0/directoryObjects/getByIds" -Method Post -Body $Json -ContentType "application/json" -UseBasicParsing
     $result = ($GObject.Content | ConvertFrom-Json).Value
 
     switch ($result.'@odata.type') {
@@ -56,7 +56,7 @@ $authHeader1 = @{
 }
 
 #exectue the actual query
-$CAs = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/beta/identity/conditionalAccess/policies/"
+$CAs = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/beta/identity/conditionalAccess/policies/" -UseBasicParsing
 $result = ($CAs.Content | ConvertFrom-Json).Value
 
 $output = @();

@@ -34,7 +34,7 @@ $body = @{
 
 try {
     Write-Verbose "Obtaining token..."
-    $res = Invoke-WebRequest -Method Post -Uri $uri -Body $body -ErrorAction Stop -Verbose:$false
+    $res = Invoke-WebRequest -Method Post -Uri $uri -Body $body -UseBasicParsing -ErrorAction Stop -Verbose:$false
     $token = ($res.Content | ConvertFrom-Json).access_token
 
     $authHeader = @{
@@ -52,7 +52,7 @@ $uri = 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignment
 
 try {
     do {
-        $result = Invoke-WebRequest -Uri $uri -Verbose:$false -ErrorAction Stop -Headers $authHeader
+        $result = Invoke-WebRequest -Uri $uri -Verbose:$false -UseBasicParsing -ErrorAction Stop -Headers $authHeader
         $uri = $($result | ConvertFrom-Json).'@odata.nextLink'
         #If we are getting multiple pages, best add some delay to avoid throttling
         Start-Sleep -Milliseconds 200
@@ -67,7 +67,7 @@ $uri = 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignment
 $roles1 = @()
 try {
     do {
-        $result = Invoke-WebRequest -Uri $uri -Verbose:$false -ErrorAction Stop -Headers $authHeader
+        $result = Invoke-WebRequest -Uri $uri -Verbose:$false -UseBasicParsing -ErrorAction Stop -Headers $authHeader
         $uri = $($result | ConvertFrom-Json).'@odata.nextLink'
         #If we are getting multiple pages, best add some delay to avoid throttling
         Start-Sleep -Milliseconds 200
@@ -86,7 +86,7 @@ if ($IncludePIMEligibleAssignments) {
 
     try {
         do {
-            $result = Invoke-WebRequest -Uri $uri -Verbose:$false -ErrorAction Stop -Headers $authHeader
+            $result = Invoke-WebRequest -Uri $uri -Verbose:$false -UseBasicParsing -ErrorAction Stop -Headers $authHeader
             $uri = $($result | ConvertFrom-Json).'@odata.nextLink'
             #If we are getting multiple pages, best add some delay to avoid throttling
             Start-Sleep -Milliseconds 200
@@ -100,7 +100,7 @@ if ($IncludePIMEligibleAssignments) {
     $uri = "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentScheduleInstances?`$filter=assignmentType eq 'Activated'"
     try {
         do {
-            $result = Invoke-WebRequest -Uri $uri -Verbose:$false -ErrorAction Stop -Headers $authHeader
+            $result = Invoke-WebRequest -Uri $uri -Verbose:$false -UseBasicParsing -ErrorAction Stop -Headers $authHeader
             $uri = $($result | ConvertFrom-Json).'@odata.nextLink'
             #If we are getting multiple pages, best add some delay to avoid throttling
             Start-Sleep -Milliseconds 200
@@ -138,7 +138,7 @@ if ($IncludePAGAssignments) {
 
         try {
             do {
-                $result = Invoke-WebRequest -Uri $uri -Verbose:$false -ErrorAction Stop -Headers $authHeader
+                $result = Invoke-WebRequest -Uri $uri -Verbose:$false -UseBasicParsing -ErrorAction Stop -Headers $authHeader
                 $uri = $($result | ConvertFrom-Json).'@odata.nextLink'
                 #If we are getting multiple pages, best add some delay to avoid throttling
                 Start-Sleep -Milliseconds 200
@@ -157,7 +157,7 @@ if ($IncludePAGAssignments) {
 
         try {
             do {
-                $result = Invoke-WebRequest -Uri $uri -Verbose:$false -ErrorAction Stop -Headers $authHeader
+                $result = Invoke-WebRequest -Uri $uri -Verbose:$false -UseBasicParsing -ErrorAction Stop -Headers $authHeader
                 $uri = $($result | ConvertFrom-Json).'@odata.nextLink'
                 #If we are getting multiple pages, best add some delay to avoid throttling
                 Start-Sleep -Milliseconds 200

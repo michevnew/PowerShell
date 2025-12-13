@@ -29,7 +29,7 @@ $body = @{
 }
 
 try {
-    $res = Invoke-WebRequest -Method Post -Uri $url -Verbose:$false -Body $body
+    $res = Invoke-WebRequest -Method Post -Uri $url -Verbose:$false -Body $body -UseBasicParsing
     $token = ($res.Content | ConvertFrom-Json).access_token
 
     $authHeader = @{
@@ -44,7 +44,7 @@ if ($IncludeAllApps) { $uri = "https://graph.microsoft.com/beta/applications?`$t
 else { $uri = "https://graph.microsoft.com/beta/applications?`$top=999&`$filter=signInAudience eq 'AzureADMultipleOrgs'" }
 
 do {
-    $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -Verbose:$false
+    $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -Verbose:$false -UseBasicParsing
     $uri = ($result.Content | ConvertFrom-Json).'@odata.nextLink'
 
     #If we are getting multiple pages, best add some delay to avoid throttling
@@ -67,7 +67,7 @@ foreach ($App in $Apps) {
             $body = @{"servicePrincipalLockConfiguration" = @{"isEnabled" = $true; "allProperties" = $true}}
             $uri = "https://graph.microsoft.com/beta/applications/$($App.id)"
             try {
-                $res = Invoke-WebRequest -Method Patch -Uri $uri -Headers $authHeader -Body ($body | ConvertTo-Json) -ContentType "application/json" -Verbose:$false -ErrorAction Stop
+                $res = Invoke-WebRequest -Method Patch -Uri $uri -Headers $authHeader -Body ($body | ConvertTo-Json) -ContentType "application/json" -UseBasicParsing -Verbose:$false -ErrorAction Stop
                 Write-Verbose "Application $($App.id) remediated successfully."
                 Add-Member -InputObject $App -MemberType NoteProperty -Name "Remediated" -Value $true
             }

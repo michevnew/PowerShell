@@ -41,7 +41,7 @@ function Renew-Token {
     }
 
     try {
-        $authenticationResult = Invoke-WebRequest -Method Post -Uri $url -Body $body -ErrorAction Stop -Verbose:$false
+        $authenticationResult = Invoke-WebRequest -Method Post -Uri $url -Body $body -UseBasicParsing -ErrorAction Stop -Verbose:$false
         $token = ($authenticationResult.Content | ConvertFrom-Json).access_token
     }
     catch { throw $_ }
@@ -73,7 +73,7 @@ function Check-ExORecipient {
     #Use the REST endpoint
     $uri = "https://outlook.office365.com/adminapi/beta/$($TenantID)/Recipient(`'$Identity`')"
     try {
-        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeaderExchange -Verbose:$false -ErrorAction Stop #suppress the output
+        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeaderExchange -UseBasicParsing -Verbose:$false -ErrorAction Stop #suppress the output
     }
     catch {
         Write-Verbose "Recipient not found: $Identity"
@@ -90,7 +90,7 @@ function Get-AllMailboxes {
     $uri = "https://outlook.office365.com/adminapi/beta/$($TenantID)/Mailbox?RecipientTypeDetails=UserMailbox,SharedMailbox,RoomMailbox,EquipmentMailbox&`$top=1000"
 
     do {
-        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeaderExchange -Verbose:$false -ErrorAction Stop #suppress the output
+        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeaderExchange -UseBasicParsing -Verbose:$false -ErrorAction Stop #suppress the output
         $result = ($result.Content | ConvertFrom-Json)
         $uri = $result.'@odata.nextLink'
 
@@ -125,7 +125,7 @@ function Get-DGMember {
 
     $uri = "https://outlook.office365.com/adminapi/beta/$($TenantID)/InvokeCommand?`$select=PrimarySmtpAddress,DisplayName,RecipientTypeDetails,ExternalDirectoryObjectId"
     try {
-        $result = Invoke-WebRequest -Method POST -Uri $uri -Headers $authHeaderExchange -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" -Verbose:$false -ErrorAction Stop #suppress the output
+        $result = Invoke-WebRequest -Method POST -Uri $uri -Headers $authHeaderExchange -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" -UseBasicParsing -Verbose:$false -ErrorAction Stop #suppress the output
     }
     catch {
         Write-Verbose "Group not found: $Identity"
@@ -149,7 +149,7 @@ function Get-UGMember {
 
     $uri = "https://outlook.office365.com/adminapi/beta/$($TenantID)/InvokeCommand?`$select=PrimarySmtpAddress"
     try {
-        $result = Invoke-WebRequest -Method POST -Uri $uri -Headers $authHeaderExchange -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" -Verbose:$false -ErrorAction Stop #suppress the output
+        $result = Invoke-WebRequest -Method POST -Uri $uri -Headers $authHeaderExchange -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" -UseBasicParsing -Verbose:$false -ErrorAction Stop #suppress the output
     }
     catch {
         Write-Verbose "Group not found: $Identity"
@@ -221,7 +221,7 @@ function Find-Event {
         #Works with URLEncoded values, too
         $uri = "https://graph.microsoft.com/beta/users/$Mailbox/events/$($MeetingId)?`$select=id,uid,createdDateTime,subject,isCancelled,start,end,isOrganizer,type,attendees,organizer"
         try {
-            $res = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -Method Get -ErrorAction Stop -Verbose:$false
+            $res = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -Method Get -UseBasicParsing -ErrorAction Stop -Verbose:$false
             $events = $res.Content | ConvertFrom-Json
         }
         catch { Write-Error "Failed to fetch events, aborting..." -ErrorAction Stop; return }
@@ -245,7 +245,7 @@ function Find-Event {
         try {
             #Use /BETA here as /V1.0 does not return the uid on $select... WTF Microsoft?!
             $uri = "https://graph.microsoft.com/beta/users/$Mailbox/events?`$filter=$filter&`$top=100&`$orderby=start/dateTime&`$select=id,uid,createdDateTime,subject,isCancelled,start,end,isOrganizer,type,attendees,organizer"
-            $res = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -Method Get -ErrorAction Stop -Verbose:$false
+            $res = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -Method Get -UseBasicParsing -ErrorAction Stop -Verbose:$false
             $events = ($res.Content | ConvertFrom-Json).Value
         }
         catch { Write-Error "Failed to fetch events, aborting..." -ErrorAction Stop; return }
@@ -335,7 +335,7 @@ foreach ($Mbox in $Mailboxes.GetEnumerator()) {
     #Find event with matching UID in the mailbox #Maybe leverage Find-Event here?
     try {
         $uri = "https://graph.microsoft.com/beta/users/$($Mbox.Value.ObjectId)/events?`$filter=uid eq '$($objEvent.uid)'&`$top=1&`$select=id,uid"
-        $res = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -Method Get -ErrorAction Stop -Verbose:$false
+        $res = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -Method Get -UseBasicParsing -ErrorAction Stop -Verbose:$false
         $cEvent = ($res.Content | ConvertFrom-Json).Value
     }
     catch { Write-Verbose $_.Exception.Message; $cEvent | Out-Default; continue } #Move to next mailbox if we fail to fetch events
@@ -351,7 +351,7 @@ foreach ($Mbox in $Mailboxes.GetEnumerator()) {
             $uri = "https://graph.microsoft.com/v1.0/users/$($Mbox.Value.ObjectId)/events/$($cEvent.id)"
             try {
                 #Maybe add check for organizer and skip if the current user is the organizer?
-                Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -SkipHeaderValidation -Verbose:$false -ErrorAction Stop | Out-Null #suppress the output
+                Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -SkipHeaderValidation -UseBasicParsing -Verbose:$false -ErrorAction Stop | Out-Null #suppress the output
                 Write-Verbose "Successfully removed event from mailbox: $($Mbox.Value.Email)"
                 $output += @{"User" = $Mbox.Value.Email;"Result" = "Success"}
             }

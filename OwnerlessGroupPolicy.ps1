@@ -75,7 +75,7 @@ function Get-OwnerlessGroupPolicy {
 
     #Get Ownerless group policy data
     $uri = "https://outlook.office.com/ows/groupsapi/v0.1/organizations('TID:$($TenantId)')/Policy/OwnerlessGroupPolicy"
-    try { $res = Invoke-WebRequest -Uri $uri -Headers $authHeader -Verbose -Debug }
+    try { $res = Invoke-WebRequest -Uri $uri -Headers $authHeader -UseBasicParsing -Verbose }
     catch { Write-Error $_ -ErrorAction Stop; return }
     return ($res.Content | ConvertFrom-Json)
 }
@@ -144,8 +144,8 @@ function Set-OwnerlessGroupPolicy {
         #SenderEmailAddress shennanigans. We can actually validate the value provided via a query to the EXO REST endpoint, with the same token!
         if ($PSBoundParameters.ContainsKey('SenderEmailAddress')) {
             try {
-            $sender = Invoke-RestMethod -Method Get -Uri "https://outlook.office.com/adminApi/beta/$($TenantId)/Recipient('$SenderEmailAddress')" -Headers $AuthHeader -Verbose -Debug -ErrorAction Stop
-            $SenderEmailAddress = $sender.PrimarySmtpAddress.ToString()
+            $vSender = Invoke-RestMethod -Method Get -Uri "https://outlook.office.com/adminApi/beta/$($TenantId)/Recipient('$SenderEmailAddress')" -Headers $AuthHeader -Verbose -Debug -ErrorAction Stop
+            $SenderEmailAddress = $vSender.PrimarySmtpAddress.ToString()
             }
             catch { Write-Error "Unable to find a matching recpient for the provided value of the -SenderEmailAddress parameter, aborting..." -ErrorAction Stop; return }
         }
@@ -223,7 +223,7 @@ function Set-OwnerlessGroupPolicy {
 
     #Set Ownerless group policy data
     $uri = "https://outlook.office.com/ows/groupsapi/v0.1/organizations('TID:$($TenantId)')/Policy/OwnerlessGroupPolicy"
-    try { $res = Invoke-WebRequest -Uri $uri -Headers $authHeader -Verbose -Debug -Method POST -ContentType 'application/json' -Body ($parametersJson | ConvertTo-Json) }
+    try { $res = Invoke-WebRequest -Uri $uri -Headers $authHeader -UseBasicParsing -Verbose -Method POST -ContentType 'application/json' -Body ($parametersJson | ConvertTo-Json) }
     catch { Write-Error $_ -ErrorAction Stop; return }
     return ($res.Content | ConvertFrom-Json)
 

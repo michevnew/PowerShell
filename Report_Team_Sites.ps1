@@ -46,7 +46,7 @@ Foreach ($Site in $Sites) {
 
     # Check if the Office 365 Group exists
     try {
-        $O365Group = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/beta/groups/$($GroupId)?$`expand=members" -ErrorAction Stop
+        $O365Group = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/beta/groups/$($GroupId)?$`expand=members" -ErrorAction Stop -UseBasicParsing
         $O365Group = ($O365Group.Content | ConvertFrom-Json)
         }
     catch { $O365Group = $Null }
@@ -57,10 +57,10 @@ Foreach ($Site in $Sites) {
         if ($Site.Template -eq "TEAMCHANNEL#0") {
             $TeamsEnabled = $true
             $channelName = $site.Title.Split([string[]]@(" - "),[System.StringSplitOptions]::RemoveEmptyEntries)[-1]
-            $TeamPCs = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/beta/Teams/$GroupId/channels"
+            $TeamPCs = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/beta/Teams/$GroupId/channels" -UseBasicParsing
             $channelID = ($TeamPCs.Content | ConvertFrom-Json).value | ? {$_.MembershipType -eq "Private" -and $_.DisplayName -eq $channelName }
 
-            $Teammembers = Invoke-WebRequest -Headers $authHeader1 -Uri "https://graph.microsoft.com/beta/Teams/$GroupId/channels/$($channelID.Id)/members"
+            $Teammembers = Invoke-WebRequest -Headers $authHeader1 -Uri "https://graph.microsoft.com/beta/Teams/$GroupId/channels/$($channelID.Id)/members" -UseBasicParsing
             $Teammembers = ($Teammembers.Content | ConvertFrom-Json).Value
             $members = ($Teammembers | ? {"guest" -ne $_.roles}) | measure | select -ExpandProperty Count
             $owners = ($Teammembers | ? {$_.Roles -eq "owner"}) | measure | select -ExpandProperty Count
@@ -68,12 +68,12 @@ Foreach ($Site in $Sites) {
         }
         else {
             $members = $O365Group.members | ? {$_.UserType -eq "Member"} | measure | select -ExpandProperty count
-            $owners = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/beta/groups/$GroupId/owners"
+            $owners = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/beta/groups/$GroupId/owners" -UseBasicParsing
             $owners = ($owners.Content | ConvertFrom-Json).value.Count
             $guests = $O365Group.members | ? {$_.UserType -ne "Member"} | measure | select -ExpandProperty count
 
             # Check if the Group is Team-enabled
-            Try { $Team = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/beta/Teams/$GroupId" -ErrorAction Stop; $TeamsEnabled = $true }
+            Try { $Team = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/beta/Teams/$GroupId" -UseBasicParsing -ErrorAction Stop; $TeamsEnabled = $true }
             Catch { $TeamsEnabled = $False }
     }}
 

@@ -31,7 +31,7 @@ $body = @{
 
 try {
     Write-Verbose "Obtaining token..."
-    $res = Invoke-WebRequest -Method Post -Uri $uri -Body $body -ErrorAction Stop -Verbose:$false
+    $res = Invoke-WebRequest -Method Post -Uri $uri -Body $body -UseBasicParsing -ErrorAction Stop -Verbose:$false
     $token = ($res.Content | ConvertFrom-Json).access_token
 
     $authHeader = @{
@@ -46,7 +46,7 @@ Write-Verbose "Retrieving list of applications..."
 $uri = "https://graph.microsoft.com/beta/applications?`$top=999"
 try {
     do {
-        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -ErrorAction Stop -Verbose:$false
+        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
         $uri = ($result.Content | ConvertFrom-Json).'@odata.nextLink'
 
         #If we are getting multiple pages, best add some delay to avoid throttling
@@ -83,7 +83,7 @@ foreach ($App in $Apps) {
         $KeyLastLogin = $null
         try {
             $uri = "https://graph.microsoft.com/beta/auditLogs/signIns?`$filter=(signInEventTypes/any(t:t eq 'servicePrincipal')) and appId eq `'$($App.AppId)`' and servicePrincipalCredentialKeyId eq `'$($cred.KeyId)`'&`$top=1"
-            $KeyLastLogin = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -ErrorAction Stop -Verbose:$false
+            $KeyLastLogin = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
             $KeyLastLogin = ($KeyLastLogin.Content | ConvertFrom-Json).value
         }
         catch { Write-Warning "Failed to retrieve sign-in logs for application $($App.id)"; $_ }

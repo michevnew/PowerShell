@@ -54,7 +54,7 @@ function Get-ServicePrincipalRoleById {
     #check if we've already collected this SP data
     #do we need anything other than AppRoles? add a $select statement...
     if (!$SPPerm[$spID]) {
-        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/beta/servicePrincipals/$spID" -Headers $authHeader -Verbose:$false
+        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/beta/servicePrincipals/$spID" -Headers $authHeader -UseBasicParsing -Verbose:$false
         $SPPerm[$spID] = ($res.Content | ConvertFrom-Json)
     }
     return $SPPerm[$spID]
@@ -69,7 +69,7 @@ function Get-UserUPNById {
     #check if we've already collected this User's data
     #currently we store only UPN, store the entire object if needed
     if (!$SPusers[$objectID]) {
-        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/v1.0/users/$($objectID)?`$select=UserPrincipalName" -Headers $authHeader -Verbose:$false
+        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/v1.0/users/$($objectID)?`$select=UserPrincipalName" -Headers $authHeader -UseBasicParsing -Verbose:$false
         $SPusers[$objectID] = ($res.Content | ConvertFrom-Json).UserPrincipalName
     }
     return $SPusers[$objectID]
@@ -95,7 +95,7 @@ function Remediate-SP {
         }
         else {
             try {
-                    Invoke-WebRequest -Method Patch -Uri $uri -Body (@{"passwordCredentials"=@()} | ConvertTo-Json) -Headers $authHeader -ContentType "application/json" -Verbose:$false -ErrorAction Stop | Out-Null
+                    Invoke-WebRequest -Method Patch -Uri $uri -Body (@{"passwordCredentials"=@()} | ConvertTo-Json) -Headers $authHeader -ContentType "application/json" -UseBasicParsing -Verbose:$false -ErrorAction Stop | Out-Null
                     Write-Verbose "Successfully removed password credentials for SP ""$SPName"" ($SPID)"
                 }
             catch { Write-Error "Failed to remove password credentials for SP ""$SPName"" ($SPID), please try the operation manually..." }
@@ -111,7 +111,7 @@ function Remediate-SP {
         }
         else {
             try {
-                    Invoke-WebRequest -Method Patch -Uri $uri -Body (@{"keyCredentials"=@()} | ConvertTo-Json) -Headers $authHeader -ContentType "application/json" -Verbose:$false -ErrorAction Stop | Out-Null
+                    Invoke-WebRequest -Method Patch -Uri $uri -Body (@{"keyCredentials"=@()} | ConvertTo-Json) -Headers $authHeader -ContentType "application/json" -UseBasicParsing -Verbose:$false -ErrorAction Stop | Out-Null
                     Write-Verbose "Successfully removed key credentials for SP ""$SPName"" ($SPID)"
                 }
             catch { Write-Error "Failed to remove key credentials for SP ""$SPName"" ($SPID), please try the operation manually..." }
@@ -127,7 +127,7 @@ function Remediate-SP {
         }
         else {
             try {
-                    Invoke-WebRequest -Method Patch -Uri $uri -Body (@{"tokenEncryptionKeyId"=$null} | ConvertTo-Json) -Headers $authHeader -ContentType "application/json" -Verbose:$false -ErrorAction Stop | Out-Null
+                    Invoke-WebRequest -Method Patch -Uri $uri -Body (@{"tokenEncryptionKeyId"=$null} | ConvertTo-Json) -Headers $authHeader -ContentType "application/json" -UseBasicParsing -Verbose:$false -ErrorAction Stop | Out-Null
                     Write-Verbose "Successfully removed token encryption key for SP ""$SPName"" ($SPID)"
                 }
             catch { Write-Error "Failed to remove key credentials for SP ""$SPName"" ($SPID), please try the operation manually..." }
@@ -156,7 +156,7 @@ $body = @{
 }
 
 try {
-    $res = Invoke-WebRequest -Method Post -Uri $url -Verbose:$false -Body $body
+    $res = Invoke-WebRequest -Method Post -Uri $url -Verbose:$false -Body $body -UseBasicParsing
     $token = ($res.Content | ConvertFrom-Json).access_token
 
     $authHeader = @{
@@ -174,7 +174,7 @@ if ($IncludeBuiltin) { $uri = "https://graph.microsoft.com/beta/servicePrincipal
 else { $uri = "https://graph.microsoft.com/beta/servicePrincipals?`$top=999&`$filter=tags/any(t:t eq 'WindowsAzureActiveDirectoryIntegratedApp')" }
 
 do {
-    $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -Verbose:$false
+    $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -UseBasicParsing -Verbose:$false
     $uri = ($result.Content | ConvertFrom-Json).'@odata.nextLink'
 
     #If we are getting multiple pages, best add some delay to avoid throttling
@@ -203,7 +203,7 @@ foreach ($SP in $SPs) {
 
     #Get owners info. We do not use $expand, as it returns the full set of object properties
     $owners = @()
-    $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/v1.0/servicePrincipals/$($sp.id)/owners?`$select=id,userPrincipalName" -Headers $authHeader -Verbose:$false
+    $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/v1.0/servicePrincipals/$($sp.id)/owners?`$select=id,userPrincipalName" -Headers $authHeader -UseBasicParsing -Verbose:$false
     $owners += ($res.Content | ConvertFrom-Json).Value.userPrincipalName
 
     #prepare the output object
@@ -234,7 +234,7 @@ foreach ($SP in $SPs) {
     if ($IncludeConsents) {
         #Check for appRoleAssignments (application permissions)
         $appRoleAssignments = @()
-        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/beta/servicePrincipals/$($sp.id)/appRoleAssignments" -Headers $authHeader -Verbose:$false
+        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/beta/servicePrincipals/$($sp.id)/appRoleAssignments" -Headers $authHeader -UseBasicParsing -Verbose:$false
         $appRoleAssignments = ($res.Content | ConvertFrom-Json).Value
 
         $OAuthperm = @{};
@@ -253,7 +253,7 @@ foreach ($SP in $SPs) {
         #Check for oauth2PermissionGrants (delegate permissions)
         #Use /beta here, as /v1.0 does not return expiryTime
         $oauth2PermissionGrants = @()
-        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/beta/servicePrincipals/$($sp.id)/oauth2PermissionGrants" -Headers $authHeader -Verbose:$false
+        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/beta/servicePrincipals/$($sp.id)/oauth2PermissionGrants" -Headers $authHeader -UseBasicParsing -Verbose:$false
         $oauth2PermissionGrants = ($res.Content | ConvertFrom-Json).Value
 
         $OAuthperm = @{};

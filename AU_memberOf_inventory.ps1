@@ -51,7 +51,7 @@ if ($UserList) {
     foreach ($user in $UserList) {
         try {
             $uri = "https://graph.microsoft.com/v1.0/users/$($user)?`$select=id,userPrincipalName"
-            $res = Invoke-WebRequest -Headers $authHeader -Uri $uri -ErrorAction Stop
+            $res = Invoke-WebRequest -Headers $authHeader -Uri $uri -UseBasicParsing -ErrorAction Stop
             $ures = ($res.Content | ConvertFrom-Json) | select Id,userPrincipalName
 
             $Users += $ures
@@ -68,7 +68,7 @@ else {
 
     $uri = "https://graph.microsoft.com/v1.0/users?`$top=999&`$select=id,userPrincipalName"
     do {
-        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -Verbose:$VerbosePreference
+        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -Verbose:$VerbosePreference -UseBasicParsing
         $uri = ($result.Content | ConvertFrom-Json).'@odata.nextLink'
 
         #If we are getting multiple pages, best add some delay to avoid throttling
@@ -96,7 +96,7 @@ foreach ($u in $Users) {
 
     #Prepare the query
     $uri = "https://graph.microsoft.com/v1.0/users/$($u.id)/memberOf/microsoft.graph.administrativeUnit"
-    $res = Invoke-WebRequest -Headers $authHeader -Uri $uri -ErrorAction Stop
+    $res = Invoke-WebRequest -Headers $authHeader -Uri $uri -UseBasicParsing -ErrorAction Stop
     $uAUs = ($res.Content | ConvertFrom-Json).Value
 
     #If no AUs returned for the user, still write to output

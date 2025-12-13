@@ -21,7 +21,7 @@ $body = @{
 }
 
 #Get a token
-$authenticationResult = Invoke-WebRequest -Method Post -Uri "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token" -ContentType "application/x-www-form-urlencoded" -Body $body -ErrorAction Stop -Verbose:$false
+$authenticationResult = Invoke-WebRequest -Method Post -Uri "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token" -ContentType "application/x-www-form-urlencoded" -Body $body -UseBasicParsing -ErrorAction Stop -Verbose:$false
 $token = ($authenticationResult.Content | ConvertFrom-Json).access_token
 $authHeader = @{'Authorization'="Bearer $token"}
 
@@ -34,7 +34,7 @@ if ($DeviceList) {
             #Make sure the device entry is valid, check against both Id and DeviceId
             $filter = "deviceId eq `'$device`' or id eq `'$device`'"
             $uri = "https://graph.microsoft.com/v1.0/devices?`$filter=$filter&`$select=id,deviceId,displayName"
-            $dres = Invoke-WebRequest -Headers $authHeader -Uri $uri -ErrorAction Stop -Verbose:$false
+            $dres = Invoke-WebRequest -Headers $authHeader -Uri $uri -UseBasicParsing -ErrorAction Stop -Verbose:$false
             $dres = (${dres}?.Content | ConvertFrom-Json).Value
 
             $GraphDevices += $dres
@@ -51,7 +51,7 @@ else {
 
     $uri = "https://graph.microsoft.com/v1.0/devices?`$select=id,deviceId,displayName"
     do {
-        $result = Invoke-WebRequest -Headers $authHeader -Uri $uri -ErrorAction Stop -Verbose:$false
+        $result = Invoke-WebRequest -Headers $authHeader -Uri $uri -UseBasicParsing -ErrorAction Stop -Verbose:$false
         $uri = $result.'@odata.nextLink'
         #If we are getting multiple pages, best add some delay to avoid throttling
         Start-Sleep -Milliseconds 500
@@ -73,7 +73,7 @@ foreach ($device in $GraphDevices) {
     #Get the list of groups for the device
     Write-Verbose "Fetching transitive group membership for device $($device.displayName)..."
     $uri = "https://graph.microsoft.com/v1.0/devices/$($device.id)/transitivememberof/microsoft.graph.group?`$select=Id,displayName,groupTypes,securityEnabled,mailEnabled,onPremisesSyncEnabled,Visibility,assignedLicenses"
-    $DeviceGroups = Invoke-WebRequest -Headers $authHeader -Uri $uri -ErrorAction Stop -Verbose:$false
+    $DeviceGroups = Invoke-WebRequest -Headers $authHeader -Uri $uri -UseBasicParsing -ErrorAction Stop -Verbose:$false
     $rGroups = ($DeviceGroups.Content | ConvertFrom-Json).Value
 
     #If no groups returned for the device, still write to output

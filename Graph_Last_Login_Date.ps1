@@ -24,7 +24,7 @@ $authHeader1 = @{
 }
 
 #exectue the actual query
-$LastLogin = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/beta/users?`$select=displayName,userPrincipalName,signInActivity"
+$LastLogin = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/beta/users?`$select=displayName,userPrincipalName,signInActivity" -UseBasicParsing
 $result = ($LastLogin.Content | ConvertFrom-Json).Value
 $result  | select DisplayName,UserPrincipalName,@{n="LastLoginDate";e={$_.signInActivity.lastSignInDateTime}}
 

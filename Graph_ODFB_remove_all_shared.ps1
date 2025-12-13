@@ -28,7 +28,7 @@ function processChildren {
     $children = @()
     #fetch children, make sure to handle multiple pages
     do {
-        $result = (Invoke-WebRequest -Uri "$URI" -Verbose:$VerbosePreference -Headers $authHeader -ErrorAction Stop).Content | ConvertFrom-Json
+        $result = (Invoke-WebRequest -Uri "$URI" -Verbose:$VerbosePreference -Headers $authHeader -UseBasicParsing -ErrorAction Stop).Content | ConvertFrom-Json
         $URI = $result.'@odata.nextLink'
         #If we are getting multiple pages, add some delay to avoid throttling
         Start-Sleep -Milliseconds 500
@@ -121,13 +121,13 @@ function RemovePermissions {
     #fetch permissions for the given item
     $permissions = @()
     $uri = "https://graph.microsoft.com/beta/users/$($UserId)/drive/items/$($ItemId)/permissions"
-    $result = Invoke-WebRequest -Uri $uri -Verbose:$VerbosePreference -Headers $authHeader -ErrorAction Stop
+    $result = Invoke-WebRequest -Uri $uri -Verbose:$VerbosePreference -Headers $authHeader -UseBasicParsing -ErrorAction Stop
     if ($result) { $permissions = ($result.content | ConvertFrom-Json).Value }
     else { continue }
 
     foreach ($entry in $permissions) {
         if ($entry.inheritedFrom) { Write-Verbose "Skipping inherited permissions..." ; continue }
-        Invoke-WebRequest -Method DELETE -Verbose:$VerbosePreference -Uri "$uri/$($entry.id)" -Headers $authHeader -SkipHeaderValidation -ErrorAction Stop | Out-Null
+        Invoke-WebRequest -Method DELETE -Verbose:$VerbosePreference -Uri "$uri/$($entry.id)" -Headers $authHeader -SkipHeaderValidation -UseBasicParsing -ErrorAction Stop | Out-Null
     }
     #check for sp. prefix on permission entries
     #SC admin permissions are skipped, not covered via the "shared" property
@@ -151,7 +151,7 @@ $body = @{
 
 #Simple code to get an access token, add your own handlers as needed
 Write-Verbose "Acquiring token..."
-try { $global:authenticationResult = Invoke-WebRequest -Method Post -Uri "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token" -ContentType "application/x-www-form-urlencoded" -Body $body -ErrorAction Stop -Verbose:$VerbosePreference }
+try { $global:authenticationResult = Invoke-WebRequest -Method Post -Uri "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token" -ContentType "application/x-www-form-urlencoded" -Body $body -UseBasicParsing -ErrorAction Stop -Verbose:$VerbosePreference }
 catch { Write-Host "Unable to obtain access token, aborting..."; return }
 
 $token = ($authenticationResult.Content | ConvertFrom-Json).access_token
@@ -167,7 +167,7 @@ if (!$user) { Write-Error "No user specified, aborting..." -ErrorAction Stop }
 #Check the user object
 Write-Verbose "Checking user $user ..."
 $uri = "https://graph.microsoft.com/v1.0/users/$user"
-try { $result = Invoke-WebRequest -Uri $uri -Verbose:$VerbosePreference -Headers $authHeader -ErrorAction Stop }
+try { $result = Invoke-WebRequest -Uri $uri -Verbose:$VerbosePreference -Headers $authHeader -UseBasicParsing -ErrorAction Stop }
 catch { Write-Error 'No matching user found, check the value of the $user parameter' -ErrorAction Stop }
 $GraphUser = $result.Content | ConvertFrom-Json
 
@@ -176,7 +176,7 @@ $Output = @()
 Write-Verbose "Processing user $($GraphUser.userPrincipalName) ODFB drive..."
 #Check whether the user has ODFB drive provisioned
 $uri = "https://graph.microsoft.com/v1.0/users/$($GraphUser.id)/drive/root"
-try { $result = Invoke-WebRequest -Uri $uri -Verbose:$VerbosePreference -Headers $authHeader -ErrorAction Stop }
+try { $result = Invoke-WebRequest -Uri $uri -Verbose:$VerbosePreference -Headers $authHeader -UseBasicParsing -ErrorAction Stop }
 catch { Write-Error "User $user doenst have OneDrive provisioned, aborting..." -ErrorAction Stop }
 $UserDrive = $result.Content | ConvertFrom-Json
 

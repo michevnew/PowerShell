@@ -176,7 +176,7 @@ function Renew-Token {
     }
 
     try {
-        $authenticationResult = Invoke-WebRequest -Method Post -Uri $url -Debug -Verbose:$false -Body $body -ErrorAction Stop
+        $authenticationResult = Invoke-WebRequest -Method Post -Uri $url -UseBasicParsing -Verbose:$false -Body $body -ErrorAction Stop
         $token = ($authenticationResult.Content | ConvertFrom-Json).access_token
         Set-Variable -Name tokenExp -Scope Global -Value $([datetime]::Now.AddSeconds(($authenticationResult.Content | ConvertFrom-Json).expires_in))
         Set-Variable -Name authHeader -Scope Global -Value @{'Authorization'="Bearer $token";'Content-Type'='application\json'}
@@ -197,7 +197,7 @@ function Invoke-GraphApiRequest {
     if ($MyInvocation.BoundParameters.ContainsKey("ErrorAction")) { $ErrorActionPreference = $MyInvocation.BoundParameters["ErrorAction"] }
     else { $ErrorActionPreference = "Stop" }
 
-    try { $result = Invoke-WebRequest -Headers $AuthHeader -Uri $uri -Verbose:$false -ErrorAction $ErrorActionPreference -ConnectionTimeoutSeconds 300 } #still getting the occasional timeout :(
+    try { $result = Invoke-WebRequest -Headers $AuthHeader -Uri $uri -UseBasicParsing -Verbose:$false -ErrorAction $ErrorActionPreference -ConnectionTimeoutSeconds 300 } #still getting the occasional timeout :(
     catch {
         if ($null -eq $_.Exception.Response) { throw }
 

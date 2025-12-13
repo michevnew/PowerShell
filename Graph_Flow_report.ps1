@@ -41,7 +41,7 @@ function Invoke-GraphApiRequest {
     }
 
     Write-Verbose "Processing request $Uri"
-    try { $result = Invoke-WebRequest -Headers $authHeader -Uri $uri -Verbose:$VerbosePreference -ErrorAction Stop }
+    try { $result = Invoke-WebRequest -Headers $authHeader -Uri $uri -UseBasicParsing -Verbose:$VerbosePreference -ErrorAction Stop }
     catch [System.Net.WebException] {
         if ($_.Exception.Response -eq $null) { throw }
 

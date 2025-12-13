@@ -11,7 +11,7 @@ $body = @{
 }
 
 #Get a token
-$authenticationResult = Invoke-WebRequest -Method Post -Uri "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token" -ContentType "application/x-www-form-urlencoded" -Body $body -ErrorAction Stop
+$authenticationResult = Invoke-WebRequest -Method Post -Uri "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token" -ContentType "application/x-www-form-urlencoded" -Body $body -UseBasicParsing -ErrorAction Stop
 $token = ($authenticationResult.Content | ConvertFrom-Json).access_token
 $authHeader = @{'Authorization'="Bearer $token"}
 
@@ -31,7 +31,7 @@ foreach ($user in $users) {
     Write-Verbose "Processing licenses for user $($user.UserPrincipalName)"
     #Prepare the query
     $uri = "https://graph.microsoft.com/v1.0/users/$($user.UserPrincipalName)?`$select=id,userPrincipalName,assignedLicenses"
-    try { $user = Invoke-WebRequest -Headers $authHeader -Uri $uri -ErrorAction Stop | select -ExpandProperty Content | ConvertFrom-Json }
+    try { $user = Invoke-WebRequest -Headers $authHeader -Uri $uri -UseBasicParsing -ErrorAction Stop | select -ExpandProperty Content | ConvertFrom-Json }
     catch { Write-Verbose "User $($user.UserPrincipalName) not found, skipping..." ; continue }
 
     #Check if the user has any licenses applied, skip to the next user if not
@@ -49,7 +49,7 @@ foreach ($user in $users) {
 
         #try to remove the license
         try {
-            Invoke-WebRequest -Headers $authHeader -Uri $uri -Body ($body | ConvertTo-Json) -Method Post -ErrorAction Stop -Verbose -ContentType 'application/json' | Out-Null
+            Invoke-WebRequest -Headers $authHeader -Uri $uri -Body ($body | ConvertTo-Json) -Method Post -UseBasicParsing -ErrorAction Stop -Verbose -ContentType 'application/json' | Out-Null
         }
         catch {
             $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())

@@ -84,7 +84,7 @@ function RemovePermissions {
 
         $uri = "$ItemURI/permissions/$($entry.id)"
 
-        try { Invoke-WebRequest -Method DELETE -Verbose:$false -Uri $uri -Headers $authHeader -SkipHeaderValidation -ErrorAction Stop | Out-Null }
+        try { Invoke-WebRequest -Method DELETE -Verbose:$false -Uri $uri -Headers $authHeader -UseBasicParsing -SkipHeaderValidation -ErrorAction Stop | Out-Null }
         catch { Write-Verbose "Failed to remove permission entry $entry for $ItemURI"; continue }
 
         #Anti-throttling control
@@ -109,7 +109,7 @@ function Renew-Token {
     }
 
     try {
-        $authenticationResult = Invoke-WebRequest -Method Post -Uri $url -Debug -Verbose:$false -Body $body -ErrorAction Stop
+        $authenticationResult = Invoke-WebRequest -Method Post -Uri $url -UseBasicParsing -Verbose:$false -Body $body -ErrorAction Stop
         $token = ($authenticationResult.Content | ConvertFrom-Json).access_token
         Set-Variable -Name tokenExp -Scope Global -Value $([datetime]::Now.AddSeconds(($authenticationResult.Content | ConvertFrom-Json).expires_in))
         Set-Variable -Name authHeader -Scope Global -Value @{'Authorization'="Bearer $token";'Content-Type'='application\json'}
@@ -130,7 +130,7 @@ function Invoke-GraphApiRequest {
     if ($MyInvocation.BoundParameters.ContainsKey("ErrorAction")) { $ErrorActionPreference = $MyInvocation.BoundParameters["ErrorAction"] }
     else { $ErrorActionPreference = "Stop" }
 
-    try { $result = Invoke-WebRequest -Headers $AuthHeader -Uri $uri -Verbose:$false -ErrorAction $ErrorActionPreference -ConnectionTimeoutSeconds 300 }
+    try { $result = Invoke-WebRequest -Headers $AuthHeader -Uri $uri -Verbose:$false -UseBasicParsing -ErrorAction $ErrorActionPreference -ConnectionTimeoutSeconds 300 }
     catch {
         if ($null -eq $_.Exception.Response) { throw }
 

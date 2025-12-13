@@ -27,8 +27,8 @@ $body = @{
 
 #Obtain the token
 Write-Verbose "Authenticating..."
-try { 
-    $tokenRequest = Invoke-WebRequest -Method Post -Uri $url -ContentType "application/x-www-form-urlencoded" -Body $body -UseBasicParsing -ErrorAction Stop 
+try {
+    $tokenRequest = Invoke-WebRequest -Method Post -Uri $url -ContentType "application/x-www-form-urlencoded" -Body $body -UseBasicParsing -ErrorAction Stop
     $token = ($tokenRequest.Content | ConvertFrom-Json).access_token
 
     $authHeader = @{
@@ -49,7 +49,7 @@ if ($UserList) {
     foreach ($user in $UserList) {
         try {
             $uri = "https://graph.microsoft.com/v1.0/users/$($user)?`$select=id,userPrincipalName"
-            $res = Invoke-WebRequest -Headers $authHeader -Uri $uri -ErrorAction Stop
+            $res = Invoke-WebRequest -Headers $authHeader -Uri $uri -UseBasicParsing -ErrorAction Stop
             $ures = ($res.Content | ConvertFrom-Json) | select Id,userPrincipalName
 
             $Users += $ures
@@ -66,7 +66,7 @@ else {
 
     $uri = "https://graph.microsoft.com/v1.0/users?`$top=999&`$select=id,userPrincipalName"
     do {
-        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -Verbose:$VerbosePreference
+        $result = Invoke-WebRequest -Uri $uri -Headers $authHeader -UseBasicParsing -Verbose:$VerbosePreference
         $uri = ($result.Content | ConvertFrom-Json).'@odata.nextLink'
 
         #If we are getting multiple pages, best add some delay to avoid throttling
@@ -96,7 +96,7 @@ foreach ($u in $Users) {
     if ($TransitiveMembership) { $QueryType = "transitiveMemberOf" } else { $QueryType = "memberOf" }
 
     $uri = "https://graph.microsoft.com/v1.0/users/$($u.id)/$QueryType/microsoft.graph.group?`$select=id,displayName,mailEnabled,securityEnabled,membershipRule,mail,isAssignableToRole,groupTypes"
-    $res = Invoke-WebRequest -Headers $authHeader -Uri $uri -ErrorAction Stop
+    $res = Invoke-WebRequest -Headers $authHeader -Uri $uri -UseBasicParsing -ErrorAction Stop
     $uGroups = ($res.Content | ConvertFrom-Json).Value
 
     #If no group objects returned for the user, still write to output

@@ -45,7 +45,7 @@ function Renew-Token {
     }
 
     try {
-        $authenticationResult = Invoke-WebRequest -Method Post -Uri $url -Body $body -ErrorAction Stop -Verbose:$false
+        $authenticationResult = Invoke-WebRequest -Method Post -Uri $url -Body $body -UseBasicParsing -ErrorAction Stop -Verbose:$false
         $token = ($authenticationResult.Content | ConvertFrom-Json).access_token
     }
     catch { throw $_ }
@@ -78,7 +78,7 @@ $Users = @()
 $uri = "https://graph.microsoft.com/v1.0/users?`$select=id,displayName,userPrincipalName&`$top=999"
 try {
     do {
-        $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -ErrorAction Stop -Verbose:$false
+        $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -UseBasicParsing -ErrorAction Stop -Verbose:$false
         $uri = $result.'@odata.nextLink'
 
         $Users += ($result.Content | ConvertFrom-Json).value
@@ -101,7 +101,7 @@ $ReportForms = @()
 foreach ($User in $Users) {
     #Does this even support pagination?
     $uri = "https://forms.office.com/formapi/api/$tenantId/users/$($User.Id)/light/forms?`$select=id,status,title,createdDate,modifiedDate,version,rowCount,softDeleted,type" #CASE SESNITIVE!
-    try { $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderForms -ErrorAction Stop -Verbose:$false }
+    try { $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderForms -UseBasicParsing -ErrorAction Stop -Verbose:$false }
     catch { Write-Error "Failed to retrieve forms for user $($User.UserPrincipalName), skipping..." -ErrorAction SilentlyContinue; $_ | fl * -Force; continue }
     $result = $result.Content | ConvertFrom-Json
 
@@ -117,7 +117,7 @@ foreach ($User in $Users) {
     #Fetch the details for each form. GetRespCounts() only works in delegate context, so we iterate each form
     foreach ($form in $UserForms) {
         $uri = "https://forms.office.com/formapi/api/$tenantId/users/$($User.Id)/light/forms(`'$($form.id)`')"
-        $result = (Invoke-WebRequest -Uri $uri -Headers $authHeaderForms -ErrorAction Continue -Verbose:$false).Content | ConvertFrom-Json
+        $result = (Invoke-WebRequest -Uri $uri -Headers $authHeaderForms -UseBasicParsing -ErrorAction Continue -Verbose:$false).Content | ConvertFrom-Json
         $form.rowCount = $result.rowCount
     }
 
@@ -134,7 +134,7 @@ if ($IncludeGroupForms) {
 
     #Get the list of groups for the current user
     $uri = "https://forms.office.com/formapi/api/groups"
-    $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderFormsROPC -ErrorAction Stop -Verbose:$false
+    $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderFormsROPC -UseBasicParsing -ErrorAction Stop -Verbose:$false
     $result = $result.Content | ConvertFrom-Json
     if (!$result.value) { Write-Verbose "No groups found, skipping..." }
 
@@ -143,7 +143,7 @@ if ($IncludeGroupForms) {
     foreach ($Group in $Groups) {
         #Does this even support pagination?
         $uri = "https://forms.office.com/formapi/api/$tenantId/groups/$($Group.Id)/light/forms?`$select=id,status,title,createdDate,modifiedDate,version,rowCount,softDeleted,type" #CASE SESNITIVE!
-        try { $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderFormsROPC -ErrorAction Stop -Verbose:$false }
+        try { $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderFormsROPC -UseBasicParsing -ErrorAction Stop -Verbose:$false }
         catch { Write-Error "Failed to retrieve forms for group $($Group.displayName), skipping..." -ErrorAction SilentlyContinue; $_ | fl * -Force; continue }
         $result = $result.Content | ConvertFrom-Json
 
@@ -159,7 +159,7 @@ if ($IncludeGroupForms) {
         #Fetch the details for each form
         foreach ($form in $GroupForms) {
             $uri = "https://forms.office.com/formapi/api/$tenantId/groups/$($Group.Id)/light/forms(`'$($form.id)`')"
-            $result = (Invoke-WebRequest -Uri $uri -Headers $authHeaderFormsROPC -ErrorAction Continue -Verbose:$false).Content | ConvertFrom-Json
+            $result = (Invoke-WebRequest -Uri $uri -Headers $authHeaderFormsROPC -UseBasicParsing -ErrorAction Continue -Verbose:$false).Content | ConvertFrom-Json
             $form.rowCount = $result.rowCount
         }
 

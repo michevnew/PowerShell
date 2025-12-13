@@ -51,7 +51,7 @@ if ($GroupList) {
         try {
             #$expand might NOT return all owners, address this!
             $uri = "https://graph.microsoft.com/v1.0/groups/$($group)?`$select=id,displayName,groupTypes,securityEnabled,mailEnabled,membershipRule,isAssignableToRole,mail,assignedLicenses&`$expand=owners(`$select=userPrincipalName)"
-            $res = Invoke-WebRequest -Method Get -Headers $authHeader -Uri $uri -ErrorAction Stop -Verbose:$VerbosePreference
+            $res = Invoke-WebRequest -Method Get -Headers $authHeader -Uri $uri -ErrorAction Stop -UseBasicParsing -Verbose:$VerbosePreference
             $gres = ($res.Content | ConvertFrom-Json)
 
             $Groups += $gres
@@ -70,7 +70,7 @@ else {
     #$expand might NOT return all owners, address this!
     $uri = "https://graph.microsoft.com/v1.0/groups?`$top=999&`$select=id,displayName,groupTypes,securityEnabled,mailEnabled,membershipRule,isAssignableToRole,mail,assignedLicenses&`$expand=owners(`$select=userPrincipalName)"
     do {
-        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -Verbose:$VerbosePreference
+        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -UseBasicParsing -Verbose:$VerbosePreference
         $uri = ($result.Content | ConvertFrom-Json).'@odata.nextLink'
 
         #If we are getting multiple pages, best add some delay to avoid throttling
@@ -116,7 +116,7 @@ foreach ($g in $Groups) {
     #We use /beta here, as /v1.0 does not return service principal objects yet
     $uri = "https://graph.microsoft.com/beta/groups/$($g.id)/$($QueryType)?`$top=999&`$select=id,displayName,mailEnabled,securityEnabled,membershipRule,mail,isAssignableToRole,groupTypes,userPrincipalName,userType,deviceId"
     do {
-        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -Verbose:$VerbosePreference -ErrorAction Stop
+        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -UseBasicParsing -Verbose:$VerbosePreference -ErrorAction Stop
         $uri = ($result.Content | ConvertFrom-Json).'@odata.nextLink'
         $gMembers += ($result.Content | ConvertFrom-Json).Value
     } while ($uri)

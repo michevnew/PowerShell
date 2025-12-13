@@ -72,7 +72,7 @@ function Get-ServicePrincipalRoleById {
     #check if we've already collected this SP data
     if (!$OAuthScopes[$resID]) {
         $uri = "https://graph.microsoft.com/beta/servicePrincipals?`$filter=appid eq '$resID'"
-        $res = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -ErrorAction Stop -Verbose:$false
+        $res = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
         $OAuthScopes[$resID] = ($res.Content | ConvertFrom-Json).Value
     }
     return $OAuthScopes[$resID]
@@ -249,7 +249,7 @@ $body = @{
 
 try {
     Write-Verbose "Obtaining token..."
-    $res = Invoke-WebRequest -Method Post -Uri $uri -Body $body -ErrorAction Stop -Verbose:$false
+    $res = Invoke-WebRequest -Method Post -Uri $uri -Body $body -UseBasicParsing -ErrorAction Stop -Verbose:$false
     $token = ($res.Content | ConvertFrom-Json).access_token
 
     $authHeader = @{
@@ -268,7 +268,7 @@ $uri = "https://graph.microsoft.com/beta/applications?`$top=999"
 #$uri = "https://graph.microsoft.com/v1.0/applications?`$top=999&`$expand=owners($select=userPrincipalName)
 try {
     do {
-        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -ErrorAction Stop -Verbose:$false
+        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
         $uri = ($result.Content | ConvertFrom-Json).'@odata.nextLink'
 
         #If we are getting multiple pages, best add some delay to avoid throttling
@@ -293,7 +293,7 @@ if ($IncludeSignInStats) {
 
         try {
             do {
-                $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -ErrorAction Stop -Verbose:$false
+                $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
                 $uri = ($result.Content | ConvertFrom-Json).'@odata.nextLink'
 
                 #If we are getting multiple pages, best add some delay to avoid throttling
@@ -313,7 +313,7 @@ if ($IncludeSignInStats) {
 
         try {
             do {
-                $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -ErrorAction Stop -Verbose:$false
+                $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
                 $uri = ($result.Content | ConvertFrom-Json).'@odata.nextLink'
 
                 #If we are getting multiple pages, best add some delay to avoid throttling
@@ -335,7 +335,7 @@ if ($IncludeRecommendations) {
     $uri = "https://graph.microsoft.com/beta/directory/recommendations?`$filter=featureAreas/any(x:x eq 'applications')&`$expand=impactedResources" #are we certain it returns all impacted resources or just 20/100/whatever?
 
     try {
-        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -ErrorAction Stop -Verbose:$false
+        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
         $dirRecs = ($result.Content | ConvertFrom-Json).Value
     }
     catch { Write-Warning "Failed to retrieve directory recommendations, data will not be included in the output..." }
@@ -366,7 +366,7 @@ foreach ($App in $Apps) {
     try {
         Write-Verbose "Retrieving owners info..."
         $owners = @()
-        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/v1.0/applications/$($App.id)/owners?`$select=id,userPrincipalName&`$top=999" -Headers $authHeader -ErrorAction Stop -Verbose:$false
+        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/v1.0/applications/$($App.id)/owners?`$select=id,userPrincipalName&`$top=999" -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
         $owners += ($res.Content | ConvertFrom-Json).Value.userPrincipalName
     }
     catch { Write-Verbose "Failed to retrieve owners info for application $($App.id) ..." }

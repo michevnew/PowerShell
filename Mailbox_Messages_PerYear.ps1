@@ -27,7 +27,7 @@ function Process-Folder {
     # First we find the oldest message in the folder
     try {
         $uri = "https://graph.microsoft.com/v1.0/users/$Id/mailFolders/$folderId/messages?`$top=1&`$orderby=createdDateTime asc&`$select=id,createdDateTime"
-        $result = Invoke-WebRequest -Uri $uri -Method GET -Headers $authHeader -ErrorAction Stop -Verbose:$false
+        $result = Invoke-WebRequest -Uri $uri -Method GET -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
         $result = ($result.Content | ConvertFrom-Json).value
 
         #Apparently, we can get null reply here, even if the folder has messages (totalItemCount > 0). Gotta love Graph...
@@ -52,14 +52,14 @@ function Process-Folder {
         if ($IncludeItemSize) {
             $uri = "https://graph.microsoft.com/v1.0/users/$Id/mailFolders/$folderId/messages?`$top=999&`$filter=createdDateTime+ge+$startDate+and+createdDateTime+lt+$endDate&`$count=true&`$select=createdDateTime&`$expand=singleValueExtendedProperties%28%24filter%3DId eq %27LONG 0x0E08%27%29"
             do {
-                $result = Invoke-WebRequest -Uri $uri -Method GET -Headers $authHeader -Verbose:$false
+                $result = Invoke-WebRequest -Uri $uri -Method GET -Headers $authHeader -UseBasicParsing -Verbose:$false
                 $uri = ($result.Content | ConvertFrom-Json).'@odata.nextLink'
                 $itemSize += (($result.Content | ConvertFrom-Json).value.singleValueExtendedProperties.value | measure -Sum).Sum
             } while ($uri)
         }
         else {
             $uri = "https://graph.microsoft.com/v1.0/users/$Id/mailFolders/$folderId/messages?`$top=1&`$filter=createdDateTime+ge+$startDate+and+createdDateTime+lt+$endDate&`$count=true&`$select=createdDateTime"
-            $result = Invoke-WebRequest -Uri $uri -Method GET -Headers $authHeader -Verbose:$false
+            $result = Invoke-WebRequest -Uri $uri -Method GET -Headers $authHeader -UseBasicParsing -Verbose:$false
             $itemSize = 0
         }
 
@@ -93,7 +93,7 @@ $body = @{
 }
 
 try {
-    $res = Invoke-WebRequest -Method Post -Uri $uri -Verbose:$false -Body $body
+    $res = Invoke-WebRequest -Method Post -Uri $uri -Verbose:$false -Body $body -UseBasicParsing
     $token = ($res.Content | ConvertFrom-Json).access_token
 
     $authHeader = @{
@@ -107,9 +107,9 @@ $Mailboxes = @{}
 foreach ($mb in $Mailbox) {
     #Make sure a matching user object is found and check for mailbox settings to confirm a mailbox exists
     try {
-        $result = Invoke-WebRequest -Uri "https://graph.microsoft.com/v1.0/users/$mb" -Method GET -Headers $authHeader -ErrorAction Stop -Verbose:$false
+        $result = Invoke-WebRequest -Uri "https://graph.microsoft.com/v1.0/users/$mb" -Method GET -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
         $SMTPAddress = ($result.Content | ConvertFrom-Json).Mail
-        $result = Invoke-WebRequest -Uri "https://graph.microsoft.com/v1.0/users/$mb/mailboxSettings/userPurpose" -Method GET -Headers $authHeader -ErrorAction Stop -Verbose:$false
+        $result = Invoke-WebRequest -Uri "https://graph.microsoft.com/v1.0/users/$mb/mailboxSettings/userPurpose" -Method GET -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
 
         if (!$result -or (($result.Content | ConvertFrom-Json).value -notmatch "user|shared|room")) { Write-Warning "Failed to get mailbox settings for $mb, make sure the user actually has a mailbox..." ; continue }
         elseif (($SMTPAddress.count -gt 1) -or ($Mailboxes[$mb]) -or ($Mailboxes.ContainsValue($SMTPAddress))) { Write-Warning "Multiple mailboxes matching the identifier $mb found, skipping..."; continue }
@@ -134,7 +134,7 @@ foreach ($entry in $Mailboxes.Values) {
         $uri = "https://graph.microsoft.com/beta/users/$entry/mailFolders?&includeHiddenFolders=true&`$top=999&`$filter=totalItemCount gt 0"
 
         do {
-            $result = Invoke-WebRequest -Method GET -Uri $uri -Headers $authHeader -ErrorAction Stop -Verbose:$false
+            $result = Invoke-WebRequest -Method GET -Uri $uri -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
             $uri = ($result.Content | ConvertFrom-Json).'@odata.nextLink'
 
             $folders += ($result.Content | ConvertFrom-Json).Value

@@ -52,7 +52,7 @@ function Renew-Token {
     }
 
     try {
-        $authenticationResult = Invoke-WebRequest -Method Post -Uri $url -Body $body -ErrorAction Stop -Verbose:$false
+        $authenticationResult = Invoke-WebRequest -Method Post -Uri $url -Body $body -UseBasicParsing -ErrorAction Stop -Verbose:$false
         $token = ($authenticationResult.Content | ConvertFrom-Json).access_token
     }
     catch { throw $_ }
@@ -87,7 +87,7 @@ function Process-Exceptions {
     }
 
     try {
-        $result = Invoke-WebRequest -Uri $uri -Method Post -Body ($body | ConvertTo-Json) -Headers $authHeaderGraph -ContentType "application/json" -Verbose:$false -ErrorAction Stop
+        $result = Invoke-WebRequest -Uri $uri -Method Post -Body ($body | ConvertTo-Json) -Headers $authHeaderGraph -ContentType "application/json" -UseBasicParsing -Verbose:$false -ErrorAction Stop
         $result = ($result.Content | ConvertFrom-Json).value | Select-Object '@odata.type',Id
     }
     catch {
@@ -183,7 +183,7 @@ function Get-Membership {
     $uri = "https://graph.microsoft.com/v1.0/users/$User/memberOf?`$select=id,displayName,groupTypes,securityEnabled,mailEnabled,onPremisesSyncEnabled,isAssignableToRole"
     try {
         do {
-            $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -ErrorAction Stop -Verbose:$false
+            $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -UseBasicParsing -ErrorAction Stop -Verbose:$false
             $uri = $result.'@odata.nextLink'
 
             $MemberOf += ($result.Content | ConvertFrom-Json).value
@@ -209,7 +209,7 @@ function Get-Ownership {
     $uri = "https://graph.microsoft.com/v1.0/users/$User/ownedObjects?`$select=id,displayName,groupTypes,securityEnabled,mailEnabled,onPremisesSyncEnabled,isAssignableToRole"
     try {
         do {
-            $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -ErrorAction Stop -Verbose:$false
+            $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -UseBasicParsing -ErrorAction Stop -Verbose:$false
             $uri = $result.'@odata.nextLink'
 
             $OwnerOf += ($result.Content | ConvertFrom-Json).value
@@ -238,7 +238,7 @@ function Process-OAuthGrants {
     $uri = "https://graph.microsoft.com/v1.0/users/$user/oauth2PermissionGrants?`$select=id,clientId,principalId,consentType,resourceId,scope"
     try {
         do {
-            $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop
+            $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -UseBasicParsing -Verbose:$false -ErrorAction Stop
             $uri = $result.'@odata.nextLink'
 
             $OAuthGrants += ($result.Content | ConvertFrom-Json).value
@@ -249,7 +249,7 @@ function Process-OAuthGrants {
                 Write-Verbose "Removing oauth2PermissionGrant $($Grant.id) for user $user..."
                 if ($PSCmdlet.ShouldProcess("Grant $($Grant.Id) for user ""$user""")) {
                     $uri = "https://graph.microsoft.com/v1.0/oauth2PermissionGrants/$($Grant.id)"
-                    $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop #suppress the output
+                    $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -UseBasicParsing -Verbose:$false -ErrorAction Stop #suppress the output
                     Process-Output -Output @{"User" = $user;"Group" = "[$($Grant.resourceId)]:$($Grant.scope)";"ObjectType" = "OAuth2PermissionGrant";"Result" = "Success"} -Message "Successfully removed oauth2PermissionGrant $($Grant.id) for user $user."
                 }
                 else { Process-Output -Output @{"User" = $user;"Group" = "[$($Grant.resourceId)]:$($Grant.scope)";"ObjectType" = "OAuth2PermissionGrant";"Result" = "Skipped due to Confirm process"} -Message "Skipped removal of oauth2PermissionGrant $($Grant.id) for user $user." }
@@ -278,7 +278,7 @@ function Set-SubstituteOwner {
     }
     $uri = "https://graph.microsoft.com/v1.0/groups/$($Group.id)/owners/`$ref"
     try {
-        $result = Invoke-WebRequest -Method POST -Uri $uri -Body ($body | ConvertTo-Json) -Headers $authHeaderGraph -ContentType "application/json" -Verbose:$false -ErrorAction Stop #suppress the output
+        $result = Invoke-WebRequest -Method POST -Uri $uri -Body ($body | ConvertTo-Json) -Headers $authHeaderGraph -ContentType "application/json" -UseBasicParsing -Verbose:$false -ErrorAction Stop #suppress the output
         Process-Output -Output @{"User" = "$SubstituteOwner";"Group" = "[Owner] $($Group.displayName)";"ObjectType" = "Group";"Result" = "Success (Owner add)"} -Message "Successfully added Owner $SubstituteOwner to Group ""$($Group.displayName)""."
     }
     catch {
@@ -299,7 +299,7 @@ function Process-ScopedRoles {
     $uri = "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments?`$filter=principalid eq `'$user`'"
     try {
         do {
-            $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop
+            $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -UseBasicParsing -Verbose:$false -ErrorAction Stop
             $uri = $result.'@odata.nextLink'
 
             $ScopedRoles += ($result.Content | ConvertFrom-Json).value | ? {$_.directoryScopeId -ne "/"}
@@ -310,7 +310,7 @@ function Process-ScopedRoles {
                 Write-Verbose "Removing scoped role assignment $($Role.id) for user $user..."
                 if ($PSCmdlet.ShouldProcess("Scoped role assignment $($Role.Id) for user ""$user""")) {
                     $uri = "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments/$($Role.id)"
-                    $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop #suppress the output
+                    $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -UseBasicParsing -Verbose:$false -ErrorAction Stop #suppress the output
                     Process-Output -Output @{"User" = $user;"Group" = "[$($Role.directoryScopeId)]:$($Role.roleDefinitionId)";"ObjectType" = "Scoped Directory role assignment";"Result" = "Success"} -Message "Successfully removed scoped Directory role assignment $($Role.id) for user $user."
                 }
                 else { Process-Output -Output @{"User" = $user;"Group" = "[$($Role.directoryScopeId)]:$($Role.roleDefinitionId)";"ObjectType" = "Scoped Directory role assignment";"Result" = "Skipped due to Confirm process"} -Message "Skipped removal of scoped Directory role assignment $($Role.id) for user $user." }
@@ -338,7 +338,7 @@ function Process-EligibleRoles {
     $uri = "https://graph.microsoft.com/beta/roleManagement/directory/roleEligibilitySchedules?`$filter=principalId eq `'$user`' and memberType eq 'Direct'"
     try {
         do {
-            $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop
+            $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -UseBasicParsing -Verbose:$false -ErrorAction Stop
             $uri = $result.'@odata.nextLink'
 
             $EligibleRoles += ($result.Content | ConvertFrom-Json).value
@@ -357,7 +357,7 @@ function Process-EligibleRoles {
                 }
                 if ($PSCmdlet.ShouldProcess("Eligible role assignment $($Role.Id) for user ""$user""")) {
                     $uri = "https://graph.microsoft.com/v1.0/roleManagement/directory/roleEligibilityScheduleRequests"
-                    $result = Invoke-WebRequest -Method Post -Body ($body | ConvertTo-Json) -Uri $uri -Headers $authHeaderGraph -ContentType "application/json" -Verbose:$false -ErrorAction Stop #suppress the output
+                    $result = Invoke-WebRequest -Method Post -Body ($body | ConvertTo-Json) -Uri $uri -Headers $authHeaderGraph -ContentType "application/json" -UseBasicParsing -Verbose:$false -ErrorAction Stop #suppress the output
                     Process-Output -Output @{"User" = $user;"Group" = "[$($Role.directoryScopeId)]:$($Role.roleDefinitionId)";"ObjectType" = "Eligible Directory role assignment";"Result" = "Success"} -Message "Successfully removed Eligible Directory role assignment $($Role.id) for user $user."
                 }
                 else { Process-Output -Output @{"User" = $user;"Group" = "[$($Role.directoryScopeId)]:$($Role.roleDefinitionId)";"ObjectType" = "Eligible Directory role assignment";"Result" = "Skipped due to Confirm process"} -Message "Skipped removal of Eligible Directory role assignment $($Role.id) for user $user." }
@@ -394,7 +394,7 @@ function Remove-RoleMembership {
         if ($PSCmdlet.ShouldProcess("User $User from role ""$($Role.displayName)""")) {
             $uri = "https://graph.microsoft.com/v1.0/directoryRoles/$($Role.id)/members/$User/`$ref"
             try {
-                $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop #suppress the output
+                $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -UseBasicParsing -Verbose:$false -ErrorAction Stop #suppress the output
                 Process-Output -Output @{"User" = $user;"Group" = "$($Role.displayName)";"ObjectType" = "Directory role";"Result" = "Success"} -Message "Successfully removed user $User from role ""$($Role.displayName)""."
             }
             catch {
@@ -434,7 +434,7 @@ function Remove-AUMembership {
         if ($PSCmdlet.ShouldProcess("User $User from Administrative Unit ""$($AU.displayName)""")) {
             $uri = "https://graph.microsoft.com/v1.0/administrativeUnits/$($AU.id)/members/$User/`$ref"
             try {
-                $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop #suppress the output
+                $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -UseBasicParsing -Verbose:$false -ErrorAction Stop #suppress the output
                 Process-Output -Output @{"User" = $user;"Group" = "$($AU.displayName)";"ObjectType" = "Administrative unit";"Result" = "Success"} -Message "Successfully removed user $User from Administrative Unit ""$($AU.displayName)""."
             }
             catch {
@@ -480,7 +480,7 @@ function Remove-Ownership {
         if ($PSCmdlet.ShouldProcess("Owner $User from object ""$($Group.displayName)""")) {
             $uri = "https://graph.microsoft.com/v1.0/$endpoint/$($Group.id)/owners/$User/`$ref"
             try {
-                $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop #suppress the output
+                $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -UseBasicParsing -Verbose:$false -ErrorAction Stop #suppress the output
                 Process-Output -Output @{"User" = "$user";"Group" = "[Owner] $($Group.displayName)";"ObjectType" = $Group.'@odata.type'.Split(".")[-1];"Result" = "Success (Onwer remove)"} -Message "Successfully removed Owner $User from Object ""$($Group.displayName)""."
             }
             catch {
@@ -561,7 +561,7 @@ function Remove-GroupMembership {
             else {
                 $uri = "https://graph.microsoft.com/v1.0/groups/$($Group.Id)/members/$User/`$ref"
                 try {
-                    $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop #suppress the output
+                    $result = Invoke-WebRequest -Method Delete -Uri $uri -Headers $authHeaderGraph -UseBasicParsing -Verbose:$false -ErrorAction Stop #suppress the output
                     Process-Output -Output @{"User" = $user;"Group" = $Group.displayName;"ObjectType" = $Group.RecipientType;"Result" = "Success"} -Message "Successfully removed user $User from group ""$($Group.displayName)""."
                 }
                 catch {
@@ -610,7 +610,7 @@ function Remove-ExchangeMembership {
 
     $uri = "https://outlook.office365.com/adminapi/beta/$($TenantID)/InvokeCommand?`$select=Name,Identity,ExternalDirectoryObjectId,ExchangeObjectId,IsDirSynced,RecipientTypeDetails"
     try {
-        $result = Invoke-WebRequest -Method POST -Uri $uri -Headers $authHeaderExchange -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" -Verbose:$false -ErrorAction Stop
+        $result = Invoke-WebRequest -Method POST -Uri $uri -Headers $authHeaderExchange -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" -UseBasicParsing -Verbose:$false -ErrorAction Stop
         $result = ($result.Content | ConvertFrom-Json).value
         if (!$result) { Write-Verbose "Group ""$($Group.displayName)"" not found, skipping..."; return }
         if ($result.count -gt 1) { Write-Verbose "Multiple groups matching the identifier $($Group.displayName) found, skipping..."; return }
@@ -666,7 +666,7 @@ function Remove-ExchangeMembership {
 
         $uri = "https://outlook.office365.com/adminapi/beta/$($TenantID)/InvokeCommand"
         try {
-            $result = Invoke-WebRequest -Method POST -Uri $uri -Headers $authHeaderExchange -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" -Verbose:$false -ErrorAction Stop #suppress the output
+            $result = Invoke-WebRequest -Method POST -Uri $uri -Headers $authHeaderExchange -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" -UseBasicParsing -Verbose:$false -ErrorAction Stop #suppress the output
             Process-Output -Output @{"User" = $user;"Group" = $Group.displayName;"ObjectType" = $Group.RecipientType;"Result" = "Success"} -Message "Successfully removed user $User from group ""$($Group.displayName).""."
             $script:processed["$($Group.ExchangeObjectId)"] = "Succeeded" #Cannot use Id/ExternalDirectoryObjectId as RoleGroups do not have them populated
         }
@@ -696,7 +696,7 @@ function Remove-ExchangeRoleAssignments {
 
             $uri = "https://outlook.office365.com/adminapi/beta/$($TenantID)/InvokeCommand"
             try {
-                $result = Invoke-WebRequest -Method POST -Uri $uri -Headers $authHeaderExchange -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" -Verbose:$false -ErrorAction Stop #suppress the output
+                $result = Invoke-WebRequest -Method POST -Uri $uri -Headers $authHeaderExchange -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" -UseBasicParsing -Verbose:$false -ErrorAction Stop #suppress the output
                 Process-Output -Output @{"User" = $user.Name;"Group" = $RoleAssignment;"ObjectType" = "Exchange Role assignment";"Result" = "Success"} -Message "Successfully removed Management role assignment ""$RoleAssignment""."
             }
             catch {
@@ -734,7 +734,7 @@ foreach ($user in $Identity) {
     #Make sure a matching user object is found and return its GUID.
     $uri = "https://graph.microsoft.com/v1.0/users/$($user)?`$select=id,userPrincipalName" #Do we need the UPN?
     try {
-        $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop
+        $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -UseBasicParsing -Verbose:$false -ErrorAction Stop
         $result = ($result | ConvertFrom-Json) | Select-Object Id, UserPrincipalName
     }
     catch {
@@ -758,7 +758,7 @@ else { $EGUIDs = $null }
 if ($SubstituteOwner) {
     $uri = "https://graph.microsoft.com/v1.0/users/$($SubstituteOwner)?`$select=id,userPrincipalName"
     try {
-        $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop
+        $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -UseBasicParsing -Verbose:$false -ErrorAction Stop
         $SubstituteOwner = ($result | ConvertFrom-Json).id
     }
     catch {
@@ -804,7 +804,7 @@ foreach ($user in $GUIDs.GetEnumerator()) {
         if ($TenantID -match "^[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}$") {
             $uri = "https://graph.microsoft.com/v1.0/domains/?`$top=999&`$select=id,isInitial"
             try {
-                $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -Verbose:$false -ErrorAction Stop
+                $result = Invoke-WebRequest -Uri $uri -Headers $authHeaderGraph -UseBasicParsing -Verbose:$false -ErrorAction Stop
                 $TID = (($result | ConvertFrom-Json).value | ? {$_.isInitial -eq $true}).id
                 $authHeaderExchange["X-AnchorMailbox"] = "UPN:SystemMailbox{bb558c35-97f1-4cb9-8ff7-d53741dc928c}@$($TID)"
             }
@@ -846,7 +846,7 @@ foreach ($user in $GUIDs.GetEnumerator()) {
             #Get the list of Exchange Role assignments
             $uri = "https://outlook.office365.com/adminapi/beta/$($TenantID)/InvokeCommand?`$select=Name,Role,RoleAssigneeName,RoleAssigneeType,AssignmentMethod,EffectiveUserName"
             try {
-                $result = Invoke-WebRequest -Method POST -Uri $uri -Headers $authHeaderExchange -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" -Verbose:$false -ErrorAction Stop
+                $result = Invoke-WebRequest -Method POST -Uri $uri -Headers $authHeaderExchange -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" -UseBasicParsing -Verbose:$false -ErrorAction Stop
                 $memberOfExchangeRoles = ($result.Content | ConvertFrom-Json).value | ? {$_.RoleAssigneeType -ne "RoleAssignmentPolicy"}
             }
             catch {

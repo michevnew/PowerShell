@@ -199,7 +199,7 @@ function Renew-Token {
     }
 
     try {
-        Set-Variable -Name authenticationResult -Scope Global -Value (Invoke-WebRequest -Method Post -Uri $url -Debug -Verbose -Body $body -ErrorAction Stop)
+        Set-Variable -Name authenticationResult -Scope Global -Value (Invoke-WebRequest -Method Post -Uri $url -Debug -Verbose -Body $body -UseBasicParsing -ErrorAction Stop)
         $token = ($authenticationResult.Content | ConvertFrom-Json).access_token
     }
     catch { $_; return }
@@ -220,7 +220,7 @@ function Invoke-GraphApiRequest {
 
     if (!$AuthHeader) { Write-Verbose "No access token found, aborting..."; throw }
 
-    try { $result = Invoke-WebRequest -Headers $AuthHeader -Uri $uri -Verbose:$VerbosePreference -ErrorAction Stop }
+    try { $result = Invoke-WebRequest -Headers $AuthHeader -Uri $uri -UseBasicParsing -Verbose:$VerbosePreference -ErrorAction Stop }
     catch [System.Net.WebException] {
         if ($_.Exception.Response -eq $null) { throw }
 

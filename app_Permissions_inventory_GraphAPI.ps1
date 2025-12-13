@@ -82,7 +82,7 @@ function Get-ServicePrincipalRoleById {
     #check if we've already collected this SP data
     #do we need anything other than AppRoles? add a $select statement...
     if (!$SPPerm[$spID]) {
-        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/beta/servicePrincipals/$spID" -Headers $authHeader -Verbose:$false
+        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/beta/servicePrincipals/$spID" -Headers $authHeader -Verbose:$false -UseBasicParsing
         $SPPerm[$spID] = ($res.Content | ConvertFrom-Json)
     }
     return $SPPerm[$spID]
@@ -97,7 +97,7 @@ function Get-UserUPNById {
     #check if we've already collected this User's data
     #currently we store only UPN, store the entire object if needed
     if (!$SPusers[$objectID]) {
-        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/v1.0/users/$($objectID)?`$select=UserPrincipalName" -Headers $authHeader -Verbose:$false
+        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/v1.0/users/$($objectID)?`$select=UserPrincipalName" -Headers $authHeader -Verbose:$false -UseBasicParsing
         $SPusers[$objectID] = ($res.Content | ConvertFrom-Json).UserPrincipalName
     }
     return $SPusers[$objectID]
@@ -170,7 +170,7 @@ function Get-SPOwnerOrg {
     if (!$SPOwnerOrg[$ID]) {
         Write-Verbose "Retrieving owner org info..."
         try {
-            $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/beta/tenantRelationships/findTenantInformationByTenantId(tenantId=`'$($ID)`')" -Headers $authHeader -ErrorAction Stop -Verbose:$false
+            $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/beta/tenantRelationships/findTenantInformationByTenantId(tenantId=`'$($ID)`')" -Headers $authHeader -ErrorAction Stop -Verbose:$false -UseBasicParsing
             $SPOwnerOrg[$ID] = ($res.Content | ConvertFrom-Json).defaultDomainName
         }
         catch { Write-Verbose "Failed to retrieve owner org info for SP $($SP.id) ..."; return }
@@ -201,7 +201,7 @@ $body = @{
 
 try {
     Write-Verbose "Obtaining token..."
-    $res = Invoke-WebRequest -Method Post -Uri $uri -Body $body -ErrorAction Stop -Verbose:$false
+    $res = Invoke-WebRequest -Method Post -Uri $uri -Body $body -UseBasicParsing -ErrorAction Stop -Verbose:$false
     $token = ($res.Content | ConvertFrom-Json).access_token
 
     $authHeader = @{
@@ -229,7 +229,7 @@ else { $uri = "https://graph.microsoft.com/beta/servicePrincipals?`$top=999&`$fi
 
 try {
     do {
-        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -ErrorAction Stop -Verbose:$false
+        $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
         $uri = ($result.Content | ConvertFrom-Json).'@odata.nextLink'
 
         #If we are getting multiple pages, best add some delay to avoid throttling
@@ -254,7 +254,7 @@ if ($IncludeSignInStats) {
 
         try {
             do {
-                $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -ErrorAction Stop -Verbose:$false
+                $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
                 $uri = ($result.Content | ConvertFrom-Json).'@odata.nextLink'
 
                 #If we are getting multiple pages, best add some delay to avoid throttling
@@ -276,7 +276,7 @@ if ($IncludeSignInStats) {
 
         try {
             do {
-                $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -ErrorAction Stop -Verbose:$false
+                $result = Invoke-WebRequest -Method Get -Uri $uri -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
                 $uri = ($result.Content | ConvertFrom-Json).'@odata.nextLink'
 
                 #If we are getting multiple pages, best add some delay to avoid throttling
@@ -318,7 +318,7 @@ foreach ($SP in $SPs) {
     try {
         Write-Verbose "Retrieving owners info..."
         $owners = @()
-        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/v1.0/servicePrincipals/$($SP.id)/owners?`$select=id,userPrincipalName&`$top=999" -Headers $authHeader -ErrorAction Stop -Verbose:$false
+        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/v1.0/servicePrincipals/$($SP.id)/owners?`$select=id,userPrincipalName&`$top=999" -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
         $owners += ($res.Content | ConvertFrom-Json).Value.userPrincipalName
     }
     catch { Write-Verbose "Failed to retrieve owners info for SP $($SP.id) ..." }
@@ -332,7 +332,7 @@ foreach ($SP in $SPs) {
     #Include information about group/directory role memberships. Cannot use /memberOf/microsoft.graph.directoryRole :(
     try {
         Write-Verbose "Retrieving group/directory role memberships..."
-        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/v1.0/servicePrincipals/$($SP.id)/memberOf?`$select=id,displayName&`$top=999" -Headers $authHeader -ErrorAction Stop -Verbose:$false
+        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/v1.0/servicePrincipals/$($SP.id)/memberOf?`$select=id,displayName&`$top=999" -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
         $memberOfGroups = (($res.Content | ConvertFrom-Json).Value | ? {$_.'@odata.type' -eq "#microsoft.graph.group"}).DisplayName -join ";"
         $memberOfRoles = (($res.Content | ConvertFrom-Json).Value | ? {$_.'@odata.type' -eq "#microsoft.graph.directoryRole"}).DisplayName -join ";"
     }
@@ -391,7 +391,7 @@ foreach ($SP in $SPs) {
     Write-Verbose "Retrieving application permissions..."
     try {
         $appRoleAssignments = @()
-        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/beta/servicePrincipals/$($SP.id)/appRoleAssignments?`$top=999" -Headers $authHeader -ErrorAction Stop -Verbose:$false
+        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/beta/servicePrincipals/$($SP.id)/appRoleAssignments?`$top=999" -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
         $appRoleAssignments = ($res.Content | ConvertFrom-Json).Value
 
         $OAuthperm = @{};
@@ -414,7 +414,7 @@ foreach ($SP in $SPs) {
     Write-Verbose "Retrieving delegate permissions..."
     try {
         $oauth2PermissionGrants = @()
-        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/beta/servicePrincipals/$($SP.id)/oauth2PermissionGrants?`$top=999" -Headers $authHeader -ErrorAction Stop -Verbose:$false
+        $res = Invoke-WebRequest -Method Get -Uri "https://graph.microsoft.com/beta/servicePrincipals/$($SP.id)/oauth2PermissionGrants?`$top=999" -Headers $authHeader -UseBasicParsing -ErrorAction Stop -Verbose:$false
         $oauth2PermissionGrants = ($res.Content | ConvertFrom-Json).Value
 
         $OAuthperm = @{};

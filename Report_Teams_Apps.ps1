@@ -28,7 +28,7 @@ $authHeader1 = @{
 $Teams = @()
 $uri = "https://graph.microsoft.com/beta/teams"
 do {
-    $result = Invoke-WebRequest -Headers $AuthHeader1 -Uri $uri -ErrorAction Stop
+    $result = Invoke-WebRequest -Headers $AuthHeader1 -Uri $uri -UseBasicParsing -ErrorAction Stop
     $uri = $result.'@odata.nextLink'
     #If we are getting multiple pages, best add some delay to avoid throttling
     Start-Sleep -Milliseconds 500
@@ -51,7 +51,7 @@ foreach ($team in $Teams) {
     Start-Sleep -Milliseconds 500
 
     #get a list of apps for the Team
-    $teamApps = Invoke-WebRequest -Headers $authHeader1 -Uri "https://graph.microsoft.com/beta/teams/$($Team.id)/installedApps?`$expand=teamsApp,teamsAppDefinition" -ErrorAction Stop
+    $teamApps = Invoke-WebRequest -Headers $authHeader1 -Uri "https://graph.microsoft.com/beta/teams/$($Team.id)/installedApps?`$expand=teamsApp,teamsAppDefinition" -UseBasicParsing -ErrorAction Stop
     $teamApps = ($teamApps.content | ConvertFrom-Json).Value
 
     $i = 0
@@ -72,12 +72,12 @@ foreach ($team in $Teams) {
     }
 
     #Get a list of channels so we can also cover Tabs
-    $TeamChannels = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/beta/Teams/$($Team.id)/channels" -ErrorAction Stop
+    $TeamChannels = Invoke-WebRequest -Headers $AuthHeader1 -Uri "https://graph.microsoft.com/beta/Teams/$($Team.id)/channels" -UseBasicParsing -ErrorAction Stop
     $TeamChannels = ($TeamChannels.Content | ConvertFrom-Json).value
 
     #Iterate over each channel, enumerate Tabs
     foreach ($channel in $TeamChannels) {
-        $tabs = Invoke-WebRequest -Headers $authHeader1 -Uri "https://graph.microsoft.com/beta/teams/$($Team.id)/channels/$($channel.id)/tabs?`$expand=teamsApp" -ErrorAction Stop
+        $tabs = Invoke-WebRequest -Headers $authHeader1 -Uri "https://graph.microsoft.com/beta/teams/$($Team.id)/channels/$($channel.id)/tabs?`$expand=teamsApp" -UseBasicParsing -ErrorAction Stop
         $tabs = ($tabs.Content | ConvertFrom-Json).value
 
         $j = 0

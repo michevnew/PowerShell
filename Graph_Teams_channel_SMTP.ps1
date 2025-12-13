@@ -29,7 +29,7 @@ $body = @{
 }
 
 try {
-    Set-Variable -Name authenticationResult -Scope Global -Value (Invoke-WebRequest -Method Post -Uri $url -Debug -Verbose -Body $body)
+    Set-Variable -Name authenticationResult -Scope Global -Value (Invoke-WebRequest -Method Post -Uri $url -UseBasicParsing -Verbose -Body $body)
     $token = ($authenticationResult.Content | ConvertFrom-Json).access_token
 }
 catch { $_; return }
@@ -45,14 +45,14 @@ else {
 #Use the /beta endpoint to fetch a list of all Teams
 #Do not switch to https://graph.microsoft.com/beta/teams as we need the Group proxy address details
 $uri = "https://graph.microsoft.com/beta/groups?`$filter=resourceProvisioningOptions/Any(x:x eq `'Team`')&`$select=id,displayName,mail,proxyAddresses,resourceBehaviorOptions,resourceProvisioningOptions,visibility"
-$result = Invoke-WebRequest -Headers $AuthHeader -Uri $uri -Verbose:$VerbosePreference
+$result = Invoke-WebRequest -Headers $AuthHeader -Uri $uri -UseBasicParsing -Verbose:$VerbosePreference
 $teams = ($result.Content | ConvertFrom-Json).Value
 
 #iterate over each Team and gather channel information
 $output = @()
 foreach ($team in $teams) {
     $uri = "https://graph.microsoft.com/v1.0/teams/$($team.id)/channels"
-    $result = Invoke-WebRequest -Headers $AuthHeader -Uri $uri -Verbose:$VerbosePreference
+    $result = Invoke-WebRequest -Headers $AuthHeader -Uri $uri -UseBasicParsing -Verbose:$VerbosePreference
     $channels = ($result.Content | ConvertFrom-Json).Value
 
     #$channels | select displayName,email,id,webUrl

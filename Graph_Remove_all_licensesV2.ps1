@@ -65,7 +65,7 @@ foreach ($u in $UserList) {
     Write-Verbose "Processing user $($u)"
     try {
         $uri = "https://graph.microsoft.com/v1.0/users/$($u)?`$select=id,userPrincipalName,assignedLicenses,licenseAssignmentStates"
-        $res = Invoke-WebRequest -Method Get -Headers $authHeader -Uri $uri -ErrorAction Stop -Verbose:$VerbosePreference
+        $res = Invoke-WebRequest -Method Get -Headers $authHeader -Uri $uri -UseBasicParsing -ErrorAction Stop -Verbose:$VerbosePreference
         $user = ($res.Content | ConvertFrom-Json)
     }
     catch {
@@ -94,7 +94,7 @@ foreach ($u in $UserList) {
 
     #try to remove the licenses
     try {
-        Invoke-WebRequest -Headers $authHeader -Uri $uri -Body ($body | ConvertTo-Json) -Method Post -ErrorAction Stop -Verbose -ContentType 'application/json' | Out-Null
+        Invoke-WebRequest -Headers $authHeader -Uri $uri -Body ($body | ConvertTo-Json) -Method Post -ErrorAction Stop -Verbose -ContentType 'application/json' -UseBasicParsing | Out-Null
     }
     catch {
         $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())

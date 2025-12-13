@@ -19,7 +19,7 @@ $body = @{
 }
 
 #Get a token
-$authenticationResult = Invoke-WebRequest -Method Post -Uri "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token" -ContentType "application/x-www-form-urlencoded" -Body $body -ErrorAction Stop
+$authenticationResult = Invoke-WebRequest -Method Post -Uri "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token" -ContentType "application/x-www-form-urlencoded" -Body $body -UseBasicParsing -ErrorAction Stop
 $token = ($authenticationResult.Content | ConvertFrom-Json).access_token
 $authHeader = @{'Authorization'="Bearer $token"}
 
@@ -36,7 +36,7 @@ $authHeader["ContentType"] = "application/x-www-form-urlencoded"
 $authHeader["ConsistencyLevel"] = "eventual"
 
 do {
-    $result = Invoke-WebRequest -Uri $uri -Verbose:$VerbosePreference -ErrorAction Stop -Headers $authHeader
+    $result = Invoke-WebRequest -Uri $uri -Verbose:$VerbosePreference -ErrorAction Stop -Headers $authHeader -UseBasicParsing
     $uri = $($result | ConvertFrom-Json).'@odata.nextLink'
     #If we are getting multiple pages, best add some delay to avoid throttling
     Start-Sleep -Milliseconds 500
@@ -45,7 +45,7 @@ do {
 
 #Get a list of all SKUs within the tenant # requires Organization.Read.All at minimum
 Write-Verbose "Obtaining the list of SKUs"
-$SKUs = Invoke-WebRequest -Uri "https://graph.microsoft.com/v1.0/subscribedSkus/" -Verbose:$VerbosePreference -ErrorAction Stop -Headers $authHeader
+$SKUs = Invoke-WebRequest -Uri "https://graph.microsoft.com/v1.0/subscribedSkus/" -Verbose:$VerbosePreference -UseBasicParsing -ErrorAction Stop -Headers $authHeader
 $SKUs = $SKUs.Content | ConvertFrom-Json | Select -ExpandProperty value
 
 #Provide a list of plans to enable
@@ -96,7 +96,7 @@ foreach ($user in $users) {
             "addLicenses" = @($userLicenses)
             "removeLicenses" = @()
         }
-        Invoke-WebRequest -Headers $authHeader -Uri $uri -Body ($body | ConvertTo-Json -Depth 5) -Method Post -ErrorAction Stop -Verbose -ContentType 'application/json'
+        Invoke-WebRequest -Headers $authHeader -Uri $uri -Body ($body | ConvertTo-Json -Depth 5) -Method Post -ErrorAction Stop -Verbose -ContentType 'application/json' -UseBasicParsing
     }
     catch {
         $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
