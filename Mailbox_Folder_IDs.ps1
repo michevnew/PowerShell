@@ -68,7 +68,7 @@ function ReturnFolderList {
 
     if ($IncludeNonIPM) { $folderScope = "NonIpmRoot" }
     else { $folderScope = "All" }
-    $MBfolders = Get-ExOMailboxFolderStatistics -FolderScope $folderScope -Identity $SMTPAddress -Verbose:$false | Select-Object Name,FolderType,FolderPath,Identity,FolderId
+    $MBfolders = Get-ExOMailboxFolderStatistics -FolderScope $folderScope -Identity $SMTPAddress -Verbose:$false -ErrorAction Stop | Select-Object Name,FolderType,FolderPath,Identity,FolderId
 
     if (!$MBfolders) { return }
 
@@ -219,8 +219,17 @@ function EntryIdToRestId {
 
 #Main script starts here
 
+#Check if the input value is GUID, and if so, fetch the UPN for better compatibility with OWA links
+if ([Guid]::TryParse($Mailbox,[ref]([System.Guid]::empty))) {
+    if (!(Check-Connectivity)) { return }
+    #We use Get-ExOMailbox here, as the user must have a mailbox anyway for the script to work
+    $mailboxInfo = Get-ExOMailbox -Identity $Mailbox -Verbose:$false -ErrorAction Stop
+    $MailboxUPN = $mailboxInfo.UserPrincipalName
+}
+else { $MailboxUPN = $Mailbox }
+
 #Get the folder list, output contains FolderId, eDiscoveryId and EntryId
-$temp = ReturnFolderList $Mailbox -IncludeNonIPM:$IncludeNonIPM
+$temp = ReturnFolderList $MailboxUPN -IncludeNonIPM:$IncludeNonIPM
 #Convert EntryId to RestId using the Graph API, store in a hash table for easy retrieval
 $RestIDs = EntryIdToRestId -Ids $temp.EntryId -Mailbox $Mailbox
 #Prepare the final output by adding the RestId values from the hash table, and also an OWA-friendly version of the RestId for direct linking to OWA
@@ -277,7 +286,7 @@ foreach ($folder in $output) {
                 <td>$($folder.EntryId)</td>
                 <td>$($folder.RestId)</td>
                 <td><a href="https://developer.microsoft.com/graph/graph-explorer?request=users%2F$mailbox%2FmailFolders%2F$($folder.RestId)&method=GET&version=v1.0&GraphUrl=https://graph.microsoft.com" class="button" target="_blank">Open in Graph explorer</a></td>
-                <td><a href="https://outlook.cloud.microsoft/mail/$mailbox/$($folder.OWAId)" class="button" target="_blank">Open in OWA</a></td>
+                <td><a href="https://outlook.cloud.microsoft/mail/$mailboxUPN/$($folder.OWAId)" class="button" target="_blank">Open in OWA</a></td>
             </tr>
 "@
 }
